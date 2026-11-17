@@ -3759,7 +3759,20 @@ window.salvaModalNota = salvaModalNota;
         } catch (e) {}
     }
     const _aggiornaComandaOriginale = aggiornaInterfacciaComanda;
-    aggiornaInterfacciaComanda = function () { _aggiornaComandaOriginale.apply(this, arguments); salvaComandaCorrente(); };
+    function mostraSubtotaliConti() {
+        document.getElementById('riepilogo-conti-cassa')?.remove();
+        const tot = {};
+        comandaAttuale.forEach(i => { if (i.conto) tot[i.conto] = r2((tot[i.conto] || 0) + r2(i.prezzo * i.quantita)); });
+        const conti = Object.keys(tot).map(Number).sort();
+        const corpo = document.getElementById('corpo-comanda');
+        if (!conti.length || !corpo) return;
+        const li = document.createElement('li');
+        li.id = 'riepilogo-conti-cassa';
+        li.style.cssText = 'list-style:none; padding:8px 4px; border-top:1px dashed var(--border); font-size:0.8rem;';
+        li.innerHTML = conti.map(c => `<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;"><span>🧾 Conto ${c}: <strong>${formattaEuro(tot[c])}</strong></span><button class="chip-dividi" onclick="apriModalDividi(); dividiConto(${c})">Paga</button></div>`).join('');
+        corpo.appendChild(li);
+    }
+    aggiornaInterfacciaComanda = function () { _aggiornaComandaOriginale.apply(this, arguments); mostraSubtotaliConti(); salvaComandaCorrente(); };
     window.aggiornaInterfacciaComanda = aggiornaInterfacciaComanda;
     ['num-tavolo', 'valore-sconto'].forEach(id => document.getElementById(id)?.addEventListener('input', salvaComandaCorrente));
     document.getElementById('tipo-sconto')?.addEventListener('change', salvaComandaCorrente);

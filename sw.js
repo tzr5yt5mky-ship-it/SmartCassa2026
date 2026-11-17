@@ -1,6 +1,6 @@
 // SmartCassa - service worker: l'app si avvia anche senza internet (dopo il primo caricamento online)
-const CACHE = 'smartcassa-v11';
-const CORE = ['./', './index.html', './smart_cassa_palmare.html', './manifest.json',
+const CACHE = 'smartcassa-v12';
+const CORE = ['./', './index.html', './smart_cassa_palmare.html', './manifest.json', './manifest_palmare.json',
   'https://unpkg.com/mqtt@5.10.1/dist/mqtt.min.js',
   'https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js'];
 self.addEventListener('install', e => {
