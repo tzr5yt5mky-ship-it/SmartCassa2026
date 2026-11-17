@@ -1,5 +1,5 @@
 // SmartCassa - service worker: l'app si avvia anche senza internet (dopo il primo caricamento online)
-const CACHE = 'smartcassa-v12';
+const CACHE = 'smartcassa-v13';
 const CORE = ['./', './index.html', './smart_cassa_palmare.html', './manifest.json', './manifest_palmare.json',
   'https://unpkg.com/mqtt@5.10.1/dist/mqtt.min.js',
   'https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js'];
@@ -14,6 +14,6 @@ self.addEventListener('fetch', e => {
   if (req.method !== 'GET' || !req.url.startsWith('http') || req.url.startsWith('ws')) return;
   e.respondWith(
     fetch(req).then(res => { if (res.ok) { const copy = res.clone(); caches.open(CACHE).then(c => c.put(req, copy)); } return res; })
-      .catch(() => caches.match(req).then(r => r || caches.match('./index.html')))
+      .catch(() => caches.match(req).then(r => r || (req.mode === 'navigate' ? caches.match(req.url.includes('palmare') ? './smart_cassa_palmare.html' : './index.html') : Response.error())))
   );
 });

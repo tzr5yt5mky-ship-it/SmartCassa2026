@@ -1674,7 +1674,7 @@ window.salvaModalNota = salvaModalNota;
                 if (idx !== -1) {
                     archivioRicevute[idx] = {
                         id: idRicevutaInModifica, tavolo, intestazione, totale: calc.finalDaPagare, subTotale: calc.lordo, sconto: calc.detrazione, metodo, operatore: operatoreOrdine, cassiere: operatoreCassaAttuale(),
-                        data: new Date().toISOString(), articoli: JSON.parse(JSON.stringify(comandaAttuale))
+                        data: new Date().toISOString(), articoli: JSON.parse(JSON.stringify(comandaAttuale)), parziale: archivioRicevute[idx].parziale
                     };
                     showToast(`Scontrino #${idRicevutaInModifica} modificato e salvato.`, "success");
                 }
@@ -1829,6 +1829,7 @@ window.salvaModalNota = salvaModalNota;
             html += `<div class="stampa-totale">TOTALE PAGATO: ${formattaEuro(r.totale)}</div>`;
             html += `<div style="text-align:right; font-size: 9pt; margin-top:4px;">Metodo: ${esc(r.metodo)}</div>`;
             blocco.innerHTML = html;
+            stampaPendente = null;
             gestisciStampaOAnteprima();
         }
 
