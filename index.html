@@ -548,7 +548,13 @@
             height: 14px;
         }
 
-    </style>
+            .badge-conto { display:inline-block; background:var(--primary); color:#fff; font-size:0.65rem; font-weight:800; padding:1px 6px; border-radius:8px; margin-right:4px; vertical-align:middle; }
+        .badge-stampato { font-size:0.65rem; font-weight:700; color:var(--success); margin-left:6px; white-space:nowrap; }
+        .dividi-riga { display:flex; justify-content:space-between; align-items:center; gap:8px; padding:6px 4px; border-bottom:1px solid var(--border); font-size:0.85rem; }
+        .dividi-riga.sel { background:var(--success-dim); }
+        .dividi-ctrl { display:flex; align-items:center; gap:4px; white-space:nowrap; }
+        .chip-dividi { border:1px solid var(--border-hover); background:var(--surface); color:var(--text-main); border-radius:14px; padding:4px 10px; font-weight:700; font-size:0.75rem; cursor:pointer; }
+</style>
     <script src="https://unpkg.com/mqtt@5.10.1/dist/mqtt.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js"></script>
 
@@ -725,6 +731,7 @@
 
         <aside class="comanda-container">
             <input type="text" id="intestazione-ricevuta" class="input-tavolo" placeholder="Intestazione Formale / Ragione Sociale" autocomplete="off" style="font-weight: 500; font-size: 0.8rem; border-color: var(--border-hover);" oninput="localforage.setItem('st_intestazione_fissa_v7', this.value).catch(err => console.error(err))">
+            <input type="text" id="operatore-cassa" class="input-tavolo" placeholder="👤 Operatore cassa" maxlength="30" autocomplete="off" style="font-size:0.8rem;" oninput="salvaOperatoreCassa()">
             <input type="text" id="num-tavolo" class="input-tavolo" placeholder="Tavolo / Nome Cliente" autocomplete="off">
             
             <ul class="lista-comanda" id="corpo-comanda"></ul>
@@ -765,6 +772,8 @@
                 <button id="btn-azione-pos" class="btn-azione btn-paga-pos" onclick="chiudiEArchiviaOrdine('POS')" disabled>💳 POS</button>
             </div>
             
+            <button id="btn-azione-dividi" class="btn-azione" onclick="apriModalDividi()" disabled>✂️ Conti separati</button>
+
             <div style="display: flex; gap: 0.5rem; margin-top: 0.25rem;">
                 <button id="btn-azione-parcheggia" class="btn-azione btn-svuota" style="color: var(--warning); border-color: transparent;" onclick="riparcheggiaComanda()" disabled>⏸️ Parcheggia</button>
                 <button id="btn-azione-svuota" class="btn-azione btn-svuota" onclick="svuotaComanda()" disabled>Annulla operazione</button>
@@ -987,6 +996,36 @@
         </div>
     </div>
 
+    <div class="modal-overlay" id="modal-dividi">
+        <div class="modal-box" style="max-width: 500px; width: 95%;">
+            <h3>✂️ Conti separati</h3>
+            <p style="font-size:0.8rem; margin-bottom:0.5rem;">Scegli cosa paga ora questo cliente: il resto rimane in comanda.</p>
+            <div id="dividi-rapidi" style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:0.5rem;"></div>
+            <div id="dividi-lista" style="max-height: 260px; overflow-y: auto; border:1px solid var(--border); border-radius: var(--radius-sm);"></div>
+            <div style="display:flex; align-items:center; gap:8px; margin:0.6rem 0; font-size:0.8rem;">
+                <span>Dividi in parti uguali tra</span>
+                <input type="number" id="dividi-persone" min="2" max="20" value="2" style="width:64px; margin:0;" oninput="dividiAggiornaParti()">
+                <strong id="dividi-quota"></strong>
+            </div>
+            <div style="background: var(--input-bg); padding: 0.6rem; border-radius: var(--radius-sm); border: 1px solid var(--border); text-align: center; margin-bottom: 0.6rem;">
+                <span style="font-size:0.7rem; font-weight:700; color:var(--text-muted); text-transform:uppercase; display:block;">Da pagare ora</span>
+                <span id="dividi-totale" style="font-size:1.4rem; font-weight:800; color:var(--success);">0,00 €</span>
+                <small id="dividi-sconto" style="display:block; color:var(--danger);"></small>
+            </div>
+            <div style="display:flex; align-items:center; gap:8px; margin-bottom:0.75rem; font-size:0.8rem;">
+                <span>Contante ricevuto</span>
+                <input type="number" id="dividi-contante" step="0.01" placeholder="0.00" style="width:110px; margin:0;" oninput="dividiAggiornaResto()">
+                <span>Resto: <strong id="dividi-resto">0,00 €</strong></span>
+            </div>
+            <div class="modal-actions" style="flex-wrap:wrap;">
+                <button class="btn-modal cancel" onclick="chiudiModalDividi()">Chiudi</button>
+                <button class="btn-modal cancel" onclick="dividiStampa()">🖨️ Ricevuta</button>
+                <button class="btn-modal confirm" onclick="dividiPaga('CONTANTI')">💶 Contanti</button>
+                <button class="btn-modal confirm" onclick="dividiPaga('POS')">💳 POS</button>
+            </div>
+        </div>
+    </div>
+
     <div class="modal-overlay" id="modal-nota">
         <div class="modal-box">
             <h3>✏️ Modifica Nota Variazione</h3>
@@ -1004,7 +1043,7 @@
             <h3>👁️ Anteprima di Stampa</h3>
             <div id="anteprima-stampa-corpo" style="background: white; color: black; padding: 15px; border: 1px solid #cbd5e1; max-height: 380px; overflow-y: auto; margin-bottom: 1.25rem; border-radius: var(--radius-md); box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);"></div>
             <div class="modal-actions">
-                <button class="btn-modal cancel" onclick="chiudiModalAnteprima()">Chiudi</button>
+                <button class="btn-modal cancel" onclick="annullaAnteprima()">Chiudi</button>
                 <button class="btn-modal confirm" onclick="confermaStampaFisica()">🖨️ Stampa</button>
             </div>
         </div>
@@ -1117,6 +1156,8 @@
         let anteprimaAttiva = localStorage.getItem('st_anteprima_attiva') === 'true';
 
         let comandaAttuale = [];
+        let operatoreOrdine = '';      // operatore del palmare che ha preso l'ordine
+        let stampaPendente = null;     // articoli da segnare come stampati quando la stampa parte davvero
         let idArticoloInModifica = null;
         let idRicevutaInModifica = null;
         let vecchioNomeCatInModifica = null;
@@ -1141,12 +1182,12 @@
                 const id = Number(a.id);
                 const quantita = Math.floor(Number(a.quantita));
                 if (!Number.isFinite(id) || !Number.isFinite(quantita) || quantita < 1) continue;
-                articoli.push({ id, nome: pulisciTesto(a.nome, 80), prezzo: 0, quantita: Math.min(quantita, 99), variazione: pulisciTesto(a.variazione, 80) });
+                articoli.push({ id, nome: pulisciTesto(a.nome, 80), prezzo: 0, quantita: Math.min(quantita, 99), variazione: pulisciTesto(a.variazione, 80), conto: Math.max(0, Math.min(9, Math.floor(Number(a.conto)) || 0)) });
             }
             if (articoli.length === 0) return null;
             const tavolo = pulisciTesto(o.tavolo, 40).replace(/^[=+\-@]+/, '') || 'BANCO';
             const oid = /^[A-Za-z0-9_-]{6,40}$/.test(String(o.oid || '')) ? String(o.oid) : null;
-            return { tavolo, oid, dataEmissione: pulisciTesto(o.dataEmissione, 40), articoli };
+            return { tavolo, oid, operatore: pulisciTesto(o.operatore, 30), dataEmissione: pulisciTesto(o.dataEmissione, 40), articoli };
         }
 
         function hexToRgba(hex, alpha) {
@@ -1397,6 +1438,7 @@
         function cambiaQuantitaItem(idx, variaz) {
     if(!comandaAttuale[idx]) return;
     comandaAttuale[idx].quantita += variaz;
+    if (comandaAttuale[idx].stampato) Object.keys(comandaAttuale[idx].stampato).forEach(k => { comandaAttuale[idx].stampato[k] = Math.min(comandaAttuale[idx].stampato[k], Math.max(0, comandaAttuale[idx].quantita)); });
     if(comandaAttuale[idx].quantita <= 0) {
         comandaAttuale.splice(idx, 1);
     }
@@ -1443,7 +1485,9 @@ function salvaModalNota() {
     if(indexNotaModifica !== null && comandaAttuale[indexNotaModifica]) {
         const inputNota = document.getElementById('input-modal-nota');
         if (inputNota) {
-            comandaAttuale[indexNotaModifica].variazione = inputNota.value.trim();
+            const nuovaNota = inputNota.value.trim();
+            if (nuovaNota !== (comandaAttuale[indexNotaModifica].variazione || '')) comandaAttuale[indexNotaModifica].stampato = {};  // nota cambiata: va ristampata
+            comandaAttuale[indexNotaModifica].variazione = nuovaNota;
         }
         aggiornaInterfacciaComanda();
     }
@@ -1486,7 +1530,7 @@ window.salvaModalNota = salvaModalNota;
                     li.className = 'item-comanda';
                     li.innerHTML = `
                         <div class="item-riga-alta">
-                            <div class="info-articolo-nome"><strong>${item.quantita}x</strong> ${esc(item.nome)}</div>
+                            <div class="info-articolo-nome">${item.conto ? `<span class="badge-conto">C${item.conto}</span>` : ''}<strong>${item.quantita}x</strong> ${esc(item.nome)}${badgeStampato(item)}</div>
                             <div style="display:flex; align-items:center; gap:0.6rem;">
                                 <span style="font-weight:700; font-size:0.9rem;">${formattaEuro(item.prezzo * item.quantita)}</span>
                                 <div class="controlli-qta">
@@ -1517,7 +1561,7 @@ window.salvaModalNota = salvaModalNota;
             if (mbBadge) mbBadge.innerText = formattaEuro(calc.finalDaPagare);
             
             const bloccato = comandaAttuale.length === 0;
-            ['btn-azione-ricevuta', 'btn-azione-cucina', 'btn-azione-bar', 'btn-azione-contanti', 'btn-azione-pos', 'btn-azione-svuota', 'btn-azione-parcheggia'].forEach(id => {
+            ['btn-azione-ricevuta', 'btn-azione-cucina', 'btn-azione-bar', 'btn-azione-contanti', 'btn-azione-pos', 'btn-azione-svuota', 'btn-azione-parcheggia', 'btn-azione-dividi'].forEach(id => {
                 const btn = document.getElementById(id);
                 if (btn) btn.disabled = bloccato;
             });
@@ -1547,6 +1591,7 @@ window.salvaModalNota = salvaModalNota;
                 showToast("Modifica annullata: lo scontrino originale è stato ripristinato.", "warning");
             }
             comandaAttuale = [];
+            operatoreOrdine = '';
             const elTavolo = document.getElementById('num-tavolo');
             if(elTavolo) elTavolo.value = '';
             
@@ -1628,14 +1673,14 @@ window.salvaModalNota = salvaModalNota;
                 const idx = archivioRicevute.findIndex(r => r.id === idRicevutaInModifica);
                 if (idx !== -1) {
                     archivioRicevute[idx] = {
-                        id: idRicevutaInModifica, tavolo, intestazione, totale: calc.finalDaPagare, subTotale: calc.lordo, sconto: calc.detrazione, metodo,
+                        id: idRicevutaInModifica, tavolo, intestazione, totale: calc.finalDaPagare, subTotale: calc.lordo, sconto: calc.detrazione, metodo, operatore: operatoreOrdine, cassiere: operatoreCassaAttuale(),
                         data: new Date().toISOString(), articoli: JSON.parse(JSON.stringify(comandaAttuale))
                     };
                     showToast(`Scontrino #${idRicevutaInModifica} modificato e salvato.`, "success");
                 }
             } else {
                 const ricevuta = {
-                    id: contatoreRicevute++, tavolo, intestazione, totale: calc.finalDaPagare, subTotale: calc.lordo, sconto: calc.detrazione, metodo,
+                    id: contatoreRicevute++, tavolo, intestazione, totale: calc.finalDaPagare, subTotale: calc.lordo, sconto: calc.detrazione, metodo, operatore: operatoreOrdine, cassiere: operatoreCassaAttuale(),
                     data: new Date().toISOString(), articoli: JSON.parse(JSON.stringify(comandaAttuale))
                 };
                 archivioRicevute.unshift(ricevuta);
@@ -1689,6 +1734,7 @@ window.salvaModalNota = salvaModalNota;
             reintegraMagazzinoDaArticoli(ricevuta.articoli);
             
             comandaAttuale = JSON.parse(JSON.stringify(ricevuta.articoli));
+            operatoreOrdine = ricevuta.operatore || '';
             document.getElementById('num-tavolo').value = ricevuta.tavolo || '';
             document.getElementById('intestazione-ricevuta').value = ricevuta.intestazione || '';
             document.getElementById('valore-sconto').value = ricevuta.sconto || 0;
@@ -1748,6 +1794,7 @@ window.salvaModalNota = salvaModalNota;
             
             const comandaDaParcheggiare = {
                 tavolo: tavolo,
+                operatore: operatoreOrdine,
                 articoli: JSON.parse(JSON.stringify(comandaAttuale))
             };
             
@@ -1766,6 +1813,7 @@ window.salvaModalNota = salvaModalNota;
                 html += `<div style="text-align:center; font-weight:800; font-size:12pt; margin-bottom:4px;">${esc(r.intestazione.toUpperCase())}</div>`;
             }
             html += `<div class="stampa-titolo">COPIA RICEVUTA</div>`;
+            html += righeOperatoreHtml(r.operatore, r.cassiere);
             html += `<div class="stampa-subtitolo">Ristampa Scontrino #${r.id}</div>`;
             html += `<div style="margin-bottom: 12px; font-size: 10pt;">${r.tavolo ? `<b>TAVOLO/CLIENTE:</b> ${esc(r.tavolo)}<br>` : ''}<b>Data:</b> ${new Date(r.data).toLocaleString('it-IT')}</div>`;
             html += `<table class="stampa-tabella">`;
@@ -1793,9 +1841,15 @@ window.salvaModalNota = salvaModalNota;
             }
         }
         function chiudiModalAnteprima() { document.getElementById('modal-anteprima').classList.remove('active'); }
+        function annullaAnteprima() { stampaPendente = null; chiudiModalAnteprima(); }
         function confermaStampaFisica() {
+            const pend = stampaPendente; stampaPendente = null;
             chiudiModalAnteprima();
             window.print();
+            if (pend) {
+                pend.items.forEach(i => { i.stampato = i.stampato || {}; i.stampato[pend.reparto] = i.quantita; });
+                aggiornaInterfacciaComanda();
+            }
         }
 
         function mostraStoricoChiusure() {
@@ -1929,6 +1983,10 @@ window.salvaModalNota = salvaModalNota;
     txt += `Pezzi totali: ${totQ}\n`;
     txt += `Totale Contanti: ${formattaEuro(cContanti)}\n`;
     txt += `Totale POS: ${formattaEuro(cPos)}\n`;
+    const perOperatore = {};
+    archivioRicevute.forEach(r => { const k = r.operatore || r.cassiere || 'Non indicato'; perOperatore[k] = perOperatore[k] || { n: 0, tot: 0 }; perOperatore[k].n++; perOperatore[k].tot = Math.round((perOperatore[k].tot + r.totale) * 100) / 100; });
+    txt += `----------------------------\nPer operatore:\n`;
+    Object.entries(perOperatore).forEach(([k, v]) => { txt += `${k}: ${formattaEuro(v.tot)} (${v.n} scontrini)\n`; });
     txt += `INCASSO COMPLESSIVO (AL NETTO SCONTI): ${formattaEuro(totI)}\n============================`;
 
     // Aggiungiamo i dati strutturati al salvataggio storico
@@ -1939,6 +1997,7 @@ window.salvaModalNota = salvaModalNota;
         contanti: cContanti,
         pos: cPos,
         totPezzi: totQ,
+        operatori: perOperatore,
         vendite: venditeStrutturate
     });
     
@@ -2332,7 +2391,7 @@ window.salvaModalNota = salvaModalNota;
 
                 d.innerHTML = `
                     <div style="display:flex;justify-content:space-between">
-                        <div><b>#${r.id}</b>${r.tavolo ? ` - ${esc(r.tavolo)}` : ''}<br><small>${new Date(r.data).toLocaleTimeString()} • ${esc(r.metodo)}</small></div>
+                        <div><b>#${r.id}</b>${r.tavolo ? ` - ${esc(r.tavolo)}` : ''}<br><small>${new Date(r.data).toLocaleTimeString()} • ${esc(r.metodo)}${r.parziale ? ' • ✂️ conto separato' : ''}${r.operatore ? ' • 👤 ' + esc(r.operatore) : ''}</small></div>
                         <div style="text-align:right;"><span style="font-weight:800; font-size:0.95rem; color:var(--success);">${formattaEuro(r.totale)}</span></div>
                     </div>
                     <div class="ricevuta-dettaglio">
@@ -2630,7 +2689,7 @@ window.salvaModalNota = salvaModalNota;
                 return `
                     <div style="background: white; border: 1px solid #e2e8f0; border-left: 4px solid #f59e0b; padding: 0.5rem; border-radius: 10px; font-size: 0.8rem; min-width: 240px; display: flex; align-items: center; justify-content: space-between; gap: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); color:#0f172a;">
                         <div onclick="caricaComandaRemotaInScontrino(${idx})" style="cursor: pointer; flex: 1; display: flex; flex-direction: column; gap: 2px;">
-                            <strong style="font-weight:700;">📍 Tavolo: ${esc(c.tavolo.toUpperCase())}</strong>
+                            <strong style="font-weight:700;">📍 Tavolo: ${esc(c.tavolo.toUpperCase())}${c.operatore ? ` <small style="font-weight:600;">👤 ${esc(c.operatore)}</small>` : ''}</strong>
                             <span style="color: #475569; font-size: 0.72rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${esc(riepilogoTesto)}</span>
                         </div>
                         <button onclick="rifiutaComandaRemota(${idx})" style="background: #fee2e2; color: #ef4444; border: 1px solid #fca5a5; width: 32px; height: 32px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; transition: all 0.2s;" title="Elimina Comanda">🗑️</button>
@@ -2644,32 +2703,46 @@ window.salvaModalNota = salvaModalNota;
                 showToast("Chiudi o annulla prima la modifica dello scontrino in corso.", "error");
                 return;
             }
+            const comandaRemota = comandeRemoteInAttesa[index];
+            if(!comandaRemota) return;
+
+            const tavoloRemoto = (comandaRemota.tavolo || '').trim().toUpperCase();
+            const inputTavolo = document.getElementById('num-tavolo');
+            const tavoloAttuale = (inputTavolo?.value || '').trim().toUpperCase();
+            let unisci = false;
+
             if (comandaAttuale.length > 0) {
-                const conferma = confirm("⚠️ Attenzione! C'è già un ordine in corso in cassa.\n\nVuoi davvero sovrascriverlo e perderlo per caricare l'ordine dal palmare?");
-                if (!conferma) {
-                    return;
+                if (tavoloAttuale && tavoloAttuale === tavoloRemoto) {
+                    unisci = true;   // stesso tavolo: i nuovi prodotti si aggiungono all'ordine aperto
+                } else {
+                    if (!confirm(`In cassa c'è già un ordine aperto (${tavoloAttuale || 'senza nome'}).\n\nLo metto in attesa (parcheggio) e carico l'ordine di ${tavoloRemoto}?`)) return;
+                    riparcheggiaComanda();
+                    if (comandaAttuale.length > 0) return;   // parcheggio non riuscito: non tocco nulla
                 }
             }
 
-            const comandaRemota = comandeRemoteInAttesa[index];
-            if(!comandaRemota) return;
-            
-            const inputTavolo = document.getElementById('num-tavolo');
-            if(inputTavolo) inputTavolo.value = comandaRemota.tavolo.toUpperCase();
-            
-            comandaAttuale = [];
-            
+            if (!unisci) {
+                if (inputTavolo) inputTavolo.value = tavoloRemoto;
+                comandaAttuale = [];
+                operatoreOrdine = comandaRemota.operatore || '';
+            } else if (comandaRemota.operatore) {
+                operatoreOrdine = [...new Set([operatoreOrdine, comandaRemota.operatore].filter(Boolean))].join(', ');
+            }
+
             comandaRemota.articoli.forEach(art => {
                 const prod = databaseMenu.find(m => m.id === art.id);
-                if(prod) {
-                    comandaAttuale.push({
-                        id: prod.id,
-                        nome: prod.nome,
-                        prezzo: prod.prezzo,
-                        quantita: art.quantita,
-                        variazione: art.variazione || ""
-                    });
+                if(!prod) return;
+                const nuovo = { id: prod.id, nome: prod.nome, prezzo: prod.prezzo, quantita: art.quantita, variazione: art.variazione || "", conto: art.conto || 0, stampato: art.stampato || {} };
+                if (unisci) {
+                    const e = comandaAttuale.find(x => x.id === nuovo.id && (x.variazione || '') === nuovo.variazione && (x.conto || 0) === nuovo.conto);
+                    if (e) {
+                        e.quantita += nuovo.quantita;
+                        e.stampato = e.stampato || {};
+                        Object.keys(nuovo.stampato).forEach(r => { e.stampato[r] = (e.stampato[r] || 0) + nuovo.stampato[r]; });
+                        return;
+                    }
                 }
+                comandaAttuale.push(nuovo);
             });
 
             const articoliNonTrovati = comandaRemota.articoli.filter(a => !databaseMenu.some(m => m.id === a.id));
@@ -2679,7 +2752,7 @@ window.salvaModalNota = salvaModalNota;
             if (articoliNonTrovati.length > 0) {
                 showToast(`Attenzione: ${articoliNonTrovati.length} articolo/i non presenti nel listino e NON caricati: ${articoliNonTrovati.map(a => a.nome || ('#' + a.id)).join(', ')}`, "error");
             }
-            if(typeof showToast === 'function') showToast(`Caricata comanda: ${comandaRemota.tavolo.toUpperCase()}`);
+            showToast(unisci ? `Aggiunto all'ordine aperto: ${tavoloRemoto}` : `Caricata comanda: ${tavoloRemoto}`);
         };
 
         window.rifiutaComandaRemota = function(index) {
@@ -3175,7 +3248,7 @@ window.salvaModalNota = salvaModalNota;
                 let articlesDettaglio = '';
                 if (comanda.articoli && Array.isArray(comanda.articoli)) {
                     articlesDettaglio = comanda.articoli.map(art => 
-                        `• ${art.quantita}x ${esc(art.nome)}${art.variazione ? ' (' + esc(art.variazione) + ')' : ''}`
+                        `• ${art.conto ? '[C' + art.conto + '] ' : ''}${art.quantita}x ${esc(art.nome)}${art.variazione ? ' (' + esc(art.variazione) + ')' : ''}`
                     ).join('\n');
                 }
 
@@ -3190,7 +3263,7 @@ window.salvaModalNota = salvaModalNota;
                 scheda.className = 'scheda-comanda-palmare';
                 scheda.innerHTML = `
                     <div class="header-scheda-palmare" style="display:flex; justify-content:space-between; align-items:center;">
-                        <span>📋 Tavolo: ${esc(tavoloNome)}</span>
+                        <span>📋 Tavolo: ${esc(tavoloNome)}${comanda.operatore ? ` <small style="font-weight:600;">👤 ${esc(comanda.operatore)}</small>` : ''}</span>
                         ${labelOrigine}
                     </div>
                     <div class="corpo-scheda-palmare" style="white-space: pre-line;">${articlesDettaglio}</div>
@@ -3228,7 +3301,7 @@ window.salvaModalNota = salvaModalNota;
             if(!p) return;
             
             let targetIndex = -1;
-            const esistente = comandaAttuale.find(i => i.id === id && !i.variazione);
+            const esistente = comandaAttuale.find(i => i.id === id && !i.variazione && !i.conto);
             
             if(esistente) {
                 esistente.quantita++;
@@ -3299,6 +3372,9 @@ window.salvaModalNota = salvaModalNota;
             csv += `Incasso Netto Contanti;"€ ${incContanti.toFixed(2).replace('.', ',')}"\n`;
             csv += `Incasso Netto POS;"€ ${incPos.toFixed(2).replace('.', ',')}"\n`;
             csv += `🏆 FATTURATO COMMERCIALE TOTALE;"€ ${incTotale.toFixed(2).replace('.', ',')}"\n`;
+            const perOp = {};
+            archivioRicevute.forEach(r => { const k = r.operatore || r.cassiere || 'Non indicato'; perOp[k] = Math.round(((perOp[k] || 0) + r.totale) * 100) / 100; });
+            Object.entries(perOp).forEach(([k, v]) => { csv += `Incasso operatore ${k.replace(/;/g, ',')};"€ ${v.toFixed(2).replace('.', ',')}"\n`; });
             csv += "========================================================\n\n\n";
 
             // --- SEZIONE 1: REPORT AGGREGATO VENDITE ARTICOLI ---
@@ -3317,7 +3393,7 @@ window.salvaModalNota = salvaModalNota;
             
             // --- SEZIONE 2: ARCHIVIO REGISTRO TRANSAZIONI ---
             csv += "=== SEZIONE 2: REGISTRO MATRICE DI TUTTI GLI SCONTRINI ===\n";
-            csv += "ID Scontrino;Data Emissione;Ora;Tavolo/Riferimento;Ragione Sociale/Intestazione;Metodo Pagamento;Lordo;Sconto;Netto Incassato;Dettaglio Piatti Ordinati\n";
+            csv += "ID Scontrino;Data Emissione;Ora;Tavolo/Riferimento;Ragione Sociale/Intestazione;Metodo Pagamento;Lordo;Sconto;Netto Incassato;Dettaglio Piatti Ordinati;Operatore;Cassa;Conto Separato\n";
             
             const ricevuteOrdinate = [...archivioRicevute].reverse();
             ricevuteOrdinate.forEach(r => {
@@ -3338,7 +3414,7 @@ window.salvaModalNota = salvaModalNota;
                 let sconto = r.sconto || 0;
                 let totale = r.totale || 0;
                 
-                csv += `${idScontrino};"${dataStr}";"${oraStr}";"${tavolo.replace(/"/g, '""')}";"${intestazione.replace(/"/g, '""')}";"${metodo}";"€ ${subTotale.toFixed(2).replace('.', ',')}";"€ ${sconto.toFixed(2).replace('.', ',')}";"€ ${totale.toFixed(2).replace('.', ',')}";"${articoliStr.replace(/"/g, '""')}"\n`;
+                csv += `${idScontrino};"${dataStr}";"${oraStr}";"${tavolo.replace(/"/g, '""')}";"${intestazione.replace(/"/g, '""')}";"${metodo}";"€ ${subTotale.toFixed(2).replace('.', ',')}";"€ ${sconto.toFixed(2).replace('.', ',')}";"€ ${totale.toFixed(2).replace('.', ',')}";"${articoliStr.replace(/"/g, '""')}";"${(r.operatore || '').replace(/"/g, '""')}";"${(r.cassiere || '').replace(/"/g, '""')}";"${r.parziale ? 'SI' : ''}"\n`;
             });
             
             const bom = "\uFEFF";
@@ -3410,18 +3486,21 @@ window.salvaModalNota = salvaModalNota;
         /* ==========================================================================
            8. STAMPE REPARTI E GESTIONE DINAMICA CATEGORIE
            ========================================================================== */
-        function avviaStampa(reparto) {
+        function avviaStampa(reparto, tutto = false) {
             const blocco = document.getElementById('blocco-stampa');
             const tavolo = document.getElementById('num-tavolo').value.trim();
             const intestazione = document.getElementById('intestazione-ricevuta').value.trim();
             const calc = calcolaValoriComanda();
+            const soloNuovi = (reparto !== 'CLIENTE' && !tutto);   // comande di reparto: solo ciò che non è ancora stato stampato
+            const giaStampato = comandaAttuale.some(i => ((i.stampato || {})[reparto] || 0) > 0);
+            const daSegnare = [];
             
             let html = '';
             if(reparto === 'CLIENTE' && intestazione) {
                 html += `<div style="text-align:center; font-weight:800; font-size:12pt; margin-bottom:4px; font-family: inherit;">${esc(intestazione.toUpperCase())}</div>`;
             }
             
-            html += `<div class="stampa-titolo">${reparto === 'CLIENTE' ? 'RICEVUTA' : 'REPARTO '+reparto}</div>`;
+            html += `<div class="stampa-titolo">${reparto === 'CLIENTE' ? 'RICEVUTA' : 'REPARTO '+reparto+(soloNuovi && giaStampato ? ' - AGGIUNTA' : '')}</div>`;
             html += `<div class="stampa-subtitolo">${reparto === 'CLIENTE' ? 'Ricevuta non valida ai fini fiscali' : 'Comanda Interna'}</div>`;
             
             if (tavolo) {
@@ -3435,6 +3514,7 @@ window.salvaModalNota = salvaModalNota;
                 html += `<div style="margin-bottom: 12px; font-size: 10pt;"><b>Data:</b> ${new Date().toLocaleString('it-IT')}</div>`;
             }
 
+            html += righeOperatoreHtml(operatoreOrdine, operatoreCassaAttuale());
             html += `<table class="stampa-tabella">`;
             
             let contaArticoliStampati = 0;
@@ -3442,6 +3522,7 @@ window.salvaModalNota = salvaModalNota;
                 const prodMenu = databaseMenu.find(m => m.id === i.id) || {};
                 const cat = (prodMenu.categoria || "").toLowerCase().trim();
                 let ok = false;
+                let qStampa = i.quantita;
                 
                 let currentReparto = configCategorie[prodMenu.categoria]?.repartoStampa;
                 if (!currentReparto) {
@@ -3456,16 +3537,21 @@ window.salvaModalNota = salvaModalNota;
                 
                 if (reparto === 'CLIENTE' || currentReparto === reparto) {
                     ok = true;
+                    if (reparto !== 'CLIENTE') {
+                        if (soloNuovi) { qStampa = i.quantita - ((i.stampato || {})[reparto] || 0); if (qStampa <= 0) ok = false; }
+                        if (ok) daSegnare.push(i);
+                    }
                 }
                 
                 if (ok) {
                     contaArticoliStampati++;
-                    html += `<tr><td><b>${i.quantita}x</b> ${esc(i.nome)}${i.variazione ? `<br><small style="margin-left:8px;">* ${esc(i.variazione)}</small>` : ''}</td><td style="text-align:right; vertical-align:top;">${reparto === 'CLIENTE' ? formattaEuro(i.prezzo * i.quantita) : ''}</td></tr>`;
+                    html += `<tr><td><b>${qStampa}x</b> ${esc(i.nome)}${i.variazione ? `<br><small style="margin-left:8px;">* ${esc(i.variazione)}</small>` : ''}</td><td style="text-align:right; vertical-align:top;">${reparto === 'CLIENTE' ? formattaEuro(i.prezzo * i.quantita) : ''}</td></tr>`;
                 }
             });
             html += `</table>`;
             
             if(contaArticoliStampati === 0) {
+                if (soloNuovi && giaStampato) { if (confirm(`Niente di nuovo da stampare per ${reparto}: è già stato stampato tutto.\n\nVuoi ristampare l'intera comanda?`)) avviaStampa(reparto, true); return; }
                 showToast(`Nessun articolo in comanda appartiene al reparto ${reparto}.`, "error");
                 return; 
             }
@@ -3479,6 +3565,7 @@ window.salvaModalNota = salvaModalNota;
             }
             
             blocco.innerHTML = html;
+            stampaPendente = (reparto !== 'CLIENTE' && daSegnare.length) ? { reparto, items: daSegnare } : null;
             gestisciStampaOAnteprima();
         }
 
@@ -3525,6 +3612,168 @@ window.salvaModalNota = salvaModalNota;
                 sel.innerHTML += `<option value="${esc(c)}">${esc(visualizzazioneNome)}</option>`;
             });
         }
+    </script>
+
+    <script>
+    /* ===== Operatore, stampe incrementali e conti separati ===== */
+    function operatoreCassaAttuale() { return pulisciTesto(document.getElementById('operatore-cassa')?.value || '', 30); }
+    function salvaOperatoreCassa() { try { localStorage.setItem('st_operatore_cassa', operatoreCassaAttuale()); } catch (e) {} }
+    function righeOperatoreHtml(op, cassiere) {
+        let h = '';
+        if (op) h += `<b>Operatore:</b> ${esc(op)}<br>`;
+        if (cassiere) h += `<b>Cassa:</b> ${esc(cassiere)}<br>`;
+        return h ? `<div style="margin-bottom:8px; font-size:10pt;">${h}</div>` : '';
+    }
+    function badgeStampato(item) {
+        const n = Math.max(0, ...Object.values(item.stampato || {}));
+        return n > 0 ? `<span class="badge-stampato" title="Già stampato in comanda">🖨 ${n}/${item.quantita}</span>` : '';
+    }
+    try { document.getElementById('operatore-cassa').value = localStorage.getItem('st_operatore_cassa') || ''; } catch (e) {}
+
+    let dividiSel = {};   // indice riga -> quantità da pagare ora
+    function apriModalDividi() {
+        if (comandaAttuale.length === 0) return;
+        if (idRicevutaInModifica !== null) { showToast("Stai modificando uno scontrino: chiudilo prima di dividere il conto.", "error"); return; }
+        dividiSel = {};
+        document.getElementById('dividi-contante').value = '';
+        dividiDisegna();
+        document.getElementById('modal-dividi').classList.add('active');
+    }
+    function chiudiModalDividi() { document.getElementById('modal-dividi').classList.remove('active'); }
+    function dividiImposta(idx, q) {
+        const it = comandaAttuale[idx]; if (!it) return;
+        q = Math.max(0, Math.min(it.quantita, q));
+        if (q) dividiSel[idx] = q; else delete dividiSel[idx];
+        dividiDisegna();
+    }
+    function dividiTutto() { dividiSel = {}; comandaAttuale.forEach((it, i) => dividiSel[i] = it.quantita); dividiDisegna(); }
+    function dividiNulla() { dividiSel = {}; dividiDisegna(); }
+    function dividiConto(n) { comandaAttuale.forEach((it, i) => { if ((it.conto || 0) === n) dividiSel[i] = it.quantita; }); dividiDisegna(); }
+    function dividiCalcola() {
+        const calc = calcolaValoriComanda();
+        let lordo = 0;
+        Object.keys(dividiSel).forEach(k => { const it = comandaAttuale[k]; if (it) lordo = r2(lordo + r2(it.prezzo * dividiSel[k])); });
+        let detr = 0;
+        if (calc.lordo > 0 && calc.detrazione > 0) detr = (lordo >= calc.lordo) ? calc.detrazione : r2(calc.detrazione * lordo / calc.lordo);
+        return { lordo, detrazione: detr, finale: r2(Math.max(0, lordo - detr)), calc };
+    }
+    function dividiDisegna() {
+        const conti = [...new Set(comandaAttuale.map(i => i.conto || 0).filter(c => c > 0))].sort();
+        document.getElementById('dividi-rapidi').innerHTML =
+            `<button class="chip-dividi" onclick="dividiTutto()">Tutto</button><button class="chip-dividi" onclick="dividiNulla()">Nulla</button>` +
+            conti.map(c => `<button class="chip-dividi" onclick="dividiConto(${c})">Conto ${c}</button>`).join('');
+        document.getElementById('dividi-lista').innerHTML = comandaAttuale.map((it, i) => {
+            const q = dividiSel[i] || 0;
+            return `<div class="dividi-riga ${q ? 'sel' : ''}">
+                <div>${it.conto ? `<span class="badge-conto">C${it.conto}</span>` : ''}<b>${it.quantita}x</b> ${esc(it.nome)}${it.variazione ? ` <small>* ${esc(it.variazione)}</small>` : ''}<br><small>${formattaEuro(it.prezzo)} cad.</small></div>
+                <div class="dividi-ctrl"><button class="btn-modifica" onclick="dividiImposta(${i}, ${q - 1})">-</button><b>${q}/${it.quantita}</b><button class="btn-modifica" onclick="dividiImposta(${i}, ${q + 1})">+</button></div>
+            </div>`;
+        }).join('');
+        const s = dividiCalcola();
+        document.getElementById('dividi-totale').innerText = formattaEuro(s.finale);
+        document.getElementById('dividi-sconto').innerText = s.detrazione > 0 ? `(sconto di quota: -${formattaEuro(s.detrazione)})` : '';
+        dividiAggiornaParti();
+        dividiAggiornaResto();
+    }
+    function dividiAggiornaParti() {
+        const n = Math.max(2, Math.min(20, parseInt(document.getElementById('dividi-persone').value) || 2));
+        const tot = calcolaValoriComanda().finalDaPagare;
+        document.getElementById('dividi-quota').innerText = `= ${formattaEuro(r2(tot / n))} a persona`;
+    }
+    function dividiAggiornaResto() {
+        const dato = parseFloat(document.getElementById('dividi-contante').value) || 0;
+        const resto = dato > 0 ? Math.max(0, r2(dato - dividiCalcola().finale)) : 0;
+        document.getElementById('dividi-resto').innerText = formattaEuro(resto);
+    }
+    function dividiArticoli() {
+        return Object.keys(dividiSel).map(k => {
+            const it = comandaAttuale[k];
+            return { id: it.id, nome: it.nome, prezzo: it.prezzo, quantita: dividiSel[k], variazione: it.variazione || '', conto: it.conto || 0 };
+        });
+    }
+    function dividiStampa() {
+        const sel = dividiCalcola();
+        if (sel.lordo <= 0) { showToast("Seleziona almeno un articolo.", "error"); return; }
+        const intestazione = document.getElementById('intestazione-ricevuta')?.value.trim() || '';
+        const tavolo = document.getElementById('num-tavolo')?.value.trim() || '';
+        let html = intestazione ? `<div style="text-align:center; font-weight:800; font-size:12pt; margin-bottom:4px;">${esc(intestazione.toUpperCase())}</div>` : '';
+        html += `<div class="stampa-titolo">RICEVUTA</div><div class="stampa-subtitolo">Conto separato - non valida ai fini fiscali</div>`;
+        html += `<div style="margin-bottom:12px; font-size:10pt;">${tavolo ? `<b>TAVOLO/CLIENTE:</b> ${esc(tavolo)}<br>` : ''}<b>Data:</b> ${new Date().toLocaleString('it-IT')}</div>`;
+        html += righeOperatoreHtml(operatoreOrdine, operatoreCassaAttuale());
+        html += `<table class="stampa-tabella">` + dividiArticoli().map(i => `<tr><td><b>${i.quantita}x</b> ${esc(i.nome)}${i.variazione ? `<br><small style="margin-left:8px;">* ${esc(i.variazione)}</small>` : ''}</td><td style="text-align:right; vertical-align:top;">${formattaEuro(r2(i.prezzo * i.quantita))}</td></tr>`).join('') + `</table>`;
+        if (sel.detrazione > 0) html += `<div style="text-align:right; font-size:10pt; margin-top:8px;">Subtotale: ${formattaEuro(sel.lordo)}</div><div style="text-align:right; font-size:10pt;">Sconto: -${formattaEuro(sel.detrazione)}</div>`;
+        html += `<div class="stampa-totale">TOTALE: ${formattaEuro(sel.finale)}</div>`;
+        document.getElementById('blocco-stampa').innerHTML = html;
+        stampaPendente = null;
+        gestisciStampaOAnteprima();
+    }
+    function dividiPaga(metodo) {
+        const sel = dividiCalcola();
+        if (sel.lordo <= 0) { showToast("Seleziona almeno un articolo da pagare.", "error"); return; }
+        const articoli = dividiArticoli();
+        const tavolo = document.getElementById('num-tavolo')?.value.trim() || '';
+        const intestazione = document.getElementById('intestazione-ricevuta')?.value.trim() || '';
+        articoli.forEach(item => {
+            const prodMenu = databaseMenu.find(m => m.id === item.id) || {};
+            if (!storicovendite[item.nome]) storicovendite[item.nome] = { qta: 0, incasso: 0, categoria: prodMenu.categoria || "Varie" };
+            storicovendite[item.nome].qta += item.quantita;
+            storicovendite[item.nome].incasso = r2(storicovendite[item.nome].incasso + item.prezzo * item.quantita);
+            databaseMagazzino.forEach(m => {
+                if (!m.parolaChiave || !String(m.parolaChiave).trim()) return;
+                if (item.nome.toLowerCase().includes(String(m.parolaChiave).trim().toLowerCase())) m.qta -= item.quantita;
+            });
+        });
+        archivioRicevute.unshift({
+            id: contatoreRicevute++, tavolo, intestazione, totale: sel.finale, subTotale: sel.lordo, sconto: sel.detrazione, metodo,
+            data: new Date().toISOString(), articoli, operatore: operatoreOrdine, cassiere: operatoreCassaAttuale(), parziale: true
+        });
+        // Toglie dalla comanda solo ciò che è stato pagato
+        Object.keys(dividiSel).forEach(k => {
+            const it = comandaAttuale[k];
+            it.quantita -= dividiSel[k];
+            if (it.stampato) Object.keys(it.stampato).forEach(r => { it.stampato[r] = Math.min(it.stampato[r], Math.max(0, it.quantita)); });
+        });
+        comandaAttuale = comandaAttuale.filter(it => it.quantita > 0);
+        if (document.getElementById('tipo-sconto').value === 'FISSO') {
+            const el = document.getElementById('valore-sconto');
+            el.value = String(r2(Math.max(0, (parseFloat(el.value) || 0) - sel.detrazione)));
+        }
+        salvaDatiLocali();
+        if (typeof aggiornaTabellaMagazzino === 'function') aggiornaTabellaMagazzino();
+        showToast(`Conto separato incassato: ${formattaEuro(sel.finale)} (${metodo}).`, "success");
+        dividiSel = {};
+        if (comandaAttuale.length === 0) { chiudiModalDividi(); svuotaComanda(true); }
+        else { aggiornaInterfacciaComanda(); dividiDisegna(); }
+        inizializzaBancoVendita();
+    }
+    
+    /* ===== Ordine aperto: salvato di continuo, così non si perde se la pagina si ricarica ===== */
+    function salvaComandaCorrente() {
+        try {
+            if (comandaAttuale.length === 0 && idRicevutaInModifica === null) { localStorage.removeItem('st_comanda_corrente'); return; }
+            localStorage.setItem('st_comanda_corrente', JSON.stringify({
+                righe: comandaAttuale, operatoreOrdine, idMod: idRicevutaInModifica,
+                tavolo: document.getElementById('num-tavolo')?.value || '',
+                tipoSconto: document.getElementById('tipo-sconto')?.value, valoreSconto: document.getElementById('valore-sconto')?.value
+            }));
+        } catch (e) {}
+    }
+    const _aggiornaComandaOriginale = aggiornaInterfacciaComanda;
+    aggiornaInterfacciaComanda = function () { _aggiornaComandaOriginale.apply(this, arguments); salvaComandaCorrente(); };
+    window.aggiornaInterfacciaComanda = aggiornaInterfacciaComanda;
+    ['num-tavolo', 'valore-sconto'].forEach(id => document.getElementById(id)?.addEventListener('input', salvaComandaCorrente));
+    document.getElementById('tipo-sconto')?.addEventListener('change', salvaComandaCorrente);
+    try {
+        const salvata = JSON.parse(localStorage.getItem('st_comanda_corrente') || 'null');
+        if (salvata && Array.isArray(salvata.righe) && (salvata.righe.length || salvata.idMod !== null)) {
+            comandaAttuale = salvata.righe; operatoreOrdine = salvata.operatoreOrdine || '';
+            idRicevutaInModifica = salvata.idMod ?? null;
+            document.getElementById('num-tavolo').value = salvata.tavolo || '';
+            if (salvata.tipoSconto) document.getElementById('tipo-sconto').value = salvata.tipoSconto;
+            if (salvata.valoreSconto) document.getElementById('valore-sconto').value = salvata.valoreSconto;
+            aggiornaInterfacciaComanda();
+        }
+    } catch (e) {}
     </script>
 </body>
 </html>

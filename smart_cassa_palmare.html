@@ -160,6 +160,13 @@
 
         #view-prodotti-container { display: flex; flex-direction: column; flex: 1; }
         #view-prodotti-container.hidden { display: none; }
+        .badge-conto { display:inline-block; background:var(--primary); color:#fff; font-size:0.65rem; font-weight:800; padding:1px 6px; border-radius:8px; margin-right:4px; vertical-align:middle; }
+        .barra-conti { display:flex; align-items:center; gap:6px; padding:6px 0 2px; overflow-x:auto; }
+        .barra-conti span { font-size:0.72rem; font-weight:700; color:var(--text-muted); white-space:nowrap; }
+        .chip-conto { border:1px solid var(--border-hover); background:var(--surface); color:var(--text-main); border-radius:16px; padding:5px 12px; font-weight:700; font-size:0.8rem; cursor:pointer; white-space:nowrap; }
+        .chip-conto.attivo { background:var(--primary); border-color:var(--primary); color:#fff; }
+        .riepilogo-conti { list-style:none; font-size:0.8rem; color:var(--text-muted); padding:8px 4px; border-top:1px dashed var(--border); }
+        .chip-operatore { display:block; font-size:0.7rem; opacity:0.85; cursor:pointer; margin-top:2px; }
     </style>
 </head>
 <body>
@@ -169,6 +176,7 @@
     <header>
         <div class="brand">
             <h1>SmartCassa <span>PALMARE</span></h1>
+            <small id="chip-operatore" class="chip-operatore" onclick="apriOperatore()">👤 Imposta operatore</small>
         </div>
         <div class="header-tools">
             <button class="header-btn" onclick="toggleConfigPanel()" title="Impostazioni Hotspot">⚙️</button>
@@ -182,6 +190,8 @@
     <div class="config-panel-hidden" id="panel-impostazioni-rete">
         <label for="chiave-rete-id">Codice rete (copialo dalle impostazioni della Cassa):</label>
         <input type="text" id="chiave-rete-id" value="" placeholder="Codice mostrato sulla cassa" autocapitalize="off" autocomplete="off" onchange="salvaEConnettiReteMqtt()">
+        <label for="nome-operatore" style="margin-top:8px;">Nome operatore (compare sulla cassa e sulle comande):</label>
+        <input type="text" id="nome-operatore" placeholder="Es: Marco" maxlength="30" autocomplete="off" onchange="salvaOperatore()" oninput="salvaOperatore()">
     </div>
 
     <div class="banner-invio" id="banner-invio"><span id="banner-invio-testo"></span><button onclick="reinviaOrdiniNonConfermati(true)">Riprova ora</button></div>
@@ -196,6 +206,7 @@
                 </div>
             </div>
 
+            <div class="barra-conti" id="barra-conti"></div>
             <div class="barra-filtri-banco" id="tabs-banco-palmare"></div>
             <div class="grid-prodotti" id="griglia-prodotti-palmare"></div>
         </div>
@@ -249,6 +260,8 @@
         let clientMqtt = null;
         let termineRicerca = "";
         let stanzaAttiva = "";
+        let operatore = "";
+        let contoAttivo = 0;   // 0 = conto unico, 1..4 = conti separati
         let ordiniNonConfermati = {};   // oid -> pacchetto: restano finché la cassa non conferma
 
         const formattaEuro = (val) => new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(val);
@@ -363,9 +376,9 @@
             triggerVibration();
             const p = databaseMenu.find(m => m.id === id);
             if (!p) return;
-            const esistente = comandaPalmare.find(item => item.id === id && !item.variazione);
+            const esistente = comandaPalmare.find(item => item.id === id && !item.variazione && (item.conto || 0) === contoAttivo);
             if (esistente) { if (esistente.quantita < 99) esistente.quantita++; }
-            else comandaPalmare.push({ id: p.id, nome: p.nome, prezzo: p.prezzo, quantita: 1, variazione: "" });
+            else comandaPalmare.push({ id: p.id, nome: p.nome, prezzo: p.prezzo, quantita: 1, variazione: "", conto: contoAttivo });
             salvaCarrello();
             disegnaGrigliaProdotti();
             aggiornaBadgeNavigazione();
@@ -413,7 +426,7 @@
             corpo.innerHTML = comandaPalmare.map((item, idx) => `
                 <li class="item-comanda">
                     <div class="item-riga-alta">
-                        <div class="info-articolo-nome"><strong>${item.quantita}x</strong> ${esc(item.nome)}</div>
+                        <div class="info-articolo-nome">${item.conto ? `<span class="badge-conto">C${item.conto}</span>` : ''}<strong>${item.quantita}x</strong> ${esc(item.nome)}</div>
                         <div style="display:flex; align-items:center;">
                             <span class="item-prezzo">${formattaEuro(item.prezzo * item.quantita)}</span>
                             <div class="controlli-qta">
@@ -425,7 +438,43 @@
                     <div class="nota-variazione" onclick="apriModalNotaPalmare(${idx})">
                         ${item.variazione ? `✏️ ${esc(item.variazione)}` : "➕ Nota / Variante"}
                     </div>
-                </li>`).join('');
+                    <div class="nota-variazione" onclick="cambiaContoRiga(${idx})">🧾 ${item.conto ? 'Conto ' + item.conto : 'Conto unico'} (tocca per cambiare)</div>
+                </li>`).join('') + riepilogoConti();
+        }
+
+        function aggiornaChipOperatore() {
+            const c = document.getElementById('chip-operatore');
+            if (c) c.innerText = operatore ? '👤 ' + operatore : '👤 Imposta operatore';
+        }
+        function salvaOperatore() {
+            operatore = pulisci(document.getElementById('nome-operatore').value, 30);
+            try { localStorage.setItem('smartcassa_operatore', operatore); } catch (e) {}
+            aggiornaChipOperatore();
+        }
+        function apriOperatore() {
+            toggleConfigPanelSeChiuso();
+            setTimeout(() => document.getElementById('nome-operatore').focus(), 60);
+        }
+
+        function disegnaBarraConti() {
+            const nomi = [[0, 'Unico'], [1, '1'], [2, '2'], [3, '3'], [4, '4']];
+            document.getElementById('barra-conti').innerHTML = '<span>🧾 Conto:</span>' +
+                nomi.map(([n, t]) => `<button class="chip-conto ${n === contoAttivo ? 'attivo' : ''}" onclick="impostaContoAttivo(${n})">${t}</button>`).join('');
+        }
+        function impostaContoAttivo(n) { triggerVibration(); contoAttivo = n; disegnaBarraConti(); }
+        function cambiaContoRiga(idx) {
+            if (!comandaPalmare[idx]) return;
+            triggerVibration();
+            comandaPalmare[idx].conto = ((comandaPalmare[idx].conto || 0) + 1) % 5;
+            salvaCarrello();
+            aggiornaInterfacciaComandaPalmare();
+        }
+        function riepilogoConti() {
+            const tot = {};
+            comandaPalmare.forEach(r => { const c = r.conto || 0; tot[c] = Math.round(((tot[c] || 0) + r.prezzo * r.quantita) * 100) / 100; });
+            const chiavi = Object.keys(tot).map(Number).sort();
+            if (chiavi.length < 2 && !(chiavi.length === 1 && chiavi[0] > 0)) return '';
+            return '<li class="riepilogo-conti">' + chiavi.map(c => `<div>${c ? 'Conto ' + c : 'Conto unico'}: <strong>${formattaEuro(tot[c])}</strong></div>`).join('') + '</li>';
         }
 
         function apriModalNotaPalmare(idx) {
@@ -524,17 +573,19 @@
         function spedisciOrdineACassa() {
             if (comandaPalmare.length === 0) return;
             if (!stanzaAttiva) { showToast("Inserisci prima il codice rete (⚙️).", "error"); toggleConfigPanelSeChiuso(); return; }
+            if (!operatore) { showToast("Inserisci prima il tuo nome operatore.", "error"); apriOperatore(); return; }
             const tavolo = pulisci(document.getElementById('num-tavolo-palmare').value, 40) || "BANCO";
             const oid = nuovoOid();
             const pacchetto = {
-                oid, tavolo, dataEmissione: new Date().toISOString(),
-                articoli: comandaPalmare.map(a => ({ id: a.id, nome: a.nome, quantita: a.quantita, variazione: a.variazione || "" }))
+                oid, tavolo, operatore, dataEmissione: new Date().toISOString(),
+                articoli: comandaPalmare.map(a => ({ id: a.id, nome: a.nome, quantita: a.quantita, variazione: a.variazione || "", conto: a.conto || 0 }))
             };
             // L'ordine resta "in uscita" finché la cassa non conferma: nessuna comanda si perde se cade la rete
             ordiniNonConfermati[oid] = pacchetto;
             salvaLocale('smartcassa_non_confermati', ordiniNonConfermati);
             comandaPalmare = [];
             document.getElementById('num-tavolo-palmare').value = '';
+            contoAttivo = 0; disegnaBarraConti();
             salvaCarrello();
             aggiornaBadgeNavigazione();
             aggiornaBannerInvio();
@@ -554,6 +605,10 @@
 
         window.onload = () => {
             if (localStorage.getItem('smartcassa_dark') === 'true') document.body.classList.add('dark-mode');
+            operatore = pulisci(localStorage.getItem('smartcassa_operatore') || '', 30);
+            document.getElementById('nome-operatore').value = operatore;
+            aggiornaChipOperatore();
+            disegnaBarraConti();
             const localStanza = localStorage.getItem('smartcassa_hotspot_id');
             if (localStanza) document.getElementById('chiave-rete-id').value = localStanza;
             const c = leggiLocale('smartcassa_carrello', null);
@@ -568,6 +623,8 @@
             aggiornaBadgeNavigazione();
             aggiornaBannerInvio();
             salvaEConnettiReteMqtt();
+            if (!operatore) setTimeout(apriOperatore, 400);
+            aggiornaInterfacciaComandaPalmare();
             setInterval(() => { if (Object.keys(ordiniNonConfermati).length) reinviaOrdiniNonConfermati(); }, 8000);
             if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').catch(() => {});
         };
