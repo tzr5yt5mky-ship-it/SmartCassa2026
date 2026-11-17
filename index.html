@@ -1,0 +1,3530 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SmartCassa Pro - Ultimate Mobile</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0f172a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/8634/8634075.png">
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg-main: #f8fafc;
+            --surface: #ffffff;
+            --border: #e2e8f0;
+            --border-hover: #cbd5e1;
+            --border-focus: #0f172a;
+            --text-main: #0f172a;
+            --text-muted: #475569;
+            --text-light: #94a3b8;
+            --input-bg: #f8fafc;
+            
+            --primary: #0f172a;
+            --primary-hover: #1e293b;
+            --success: #10b981;
+            --success-dim: #ecfdf5;
+            --info: #3b82f6;
+            --info-dim: #eff6ff;
+            --warning: #f59e0b;
+            --warning-dim: #fffbeb;
+            --danger: #ef4444;
+            --danger-dim: #fef2f2;
+            
+            --radius-lg: 16px;
+            --radius-md: 10px;
+            --radius-sm: 6px;
+            
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -4px rgba(0, 0, 0, 0.05);
+        }
+
+        body.dark-mode {
+            --bg-main: #0f172a;
+            --surface: #1e293b;
+            --border: #334155;
+            --border-hover: #475569;
+            --border-focus: #94a3b8;
+            --text-main: #f8fafc;
+            --text-muted: #cbd5e1;
+            --text-light: #64748b;
+            --input-bg: #0f172a;
+            
+            --primary: #3b82f6;
+            --primary-hover: #60a5fa;
+            --success-dim: rgba(16, 185, 129, 0.15);
+            --info-dim: rgba(59, 130, 246, 0.15);
+            --warning-dim: rgba(245, 158, 11, 0.15);
+            --danger-dim: rgba(239, 68, 68, 0.15);
+            
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.4);
+        }
+
+        html { scroll-behavior: smooth; }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; letter-spacing: -0.01em; -webkit-tap-highlight-color: transparent; }
+        
+        body { background-color: var(--bg-main); color: var(--text-main); display: flex; flex-direction: column; min-height: 100vh; -webkit-font-smoothing: antialiased; transition: background-color 0.3s, color 0.3s; }
+
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--border-hover); }
+        
+        header { background: var(--surface); padding: 0.75rem 2rem; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); box-shadow: var(--shadow-sm); flex-wrap: wrap; gap: 1rem; position: sticky; top: 0; z-index: 100; transition: background-color 0.3s, border-color 0.3s; }
+        
+        .brand { display: flex; align-items: center; gap: 0.5rem; }
+        .brand h1 { font-size: 1.15rem; font-weight: 800; color: var(--text-main); }
+        .brand span { background: var(--info-dim); color: var(--info); padding: 0.2rem 0.5rem; border-radius: var(--radius-sm); font-size: 0.65rem; font-weight: 700; text-transform: uppercase; }
+        
+        
+        
+        
+        
+        
+        .header-tools { display: flex; align-items: center; gap: 0.5rem; }
+        .theme-toggle { background: var(--border); border: none; font-size: 1.1rem; cursor: pointer; padding: 0.4rem; border-radius: 50%; display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; transition: all 0.2s; }
+        .theme-toggle:hover { background: var(--border-hover); }
+        .theme-toggle.active-format { background: var(--primary); color: white; border-color: var(--primary); }
+        #data-ora { font-weight: 500; color: var(--text-muted); font-size: 0.8rem; background: var(--input-bg); padding: 0.4rem 0.8rem; border-radius: var(--radius-md); border: 1px solid var(--border); margin-left: 0.5rem; }
+
+        .window-pane { display: none; padding: 1.5rem 2rem; flex: 1; max-width: 1750px; width: 100%; margin: 0 auto; animation: fadeIn 0.2s ease-out; }
+        .window-pane.active { display: flex; gap: 1.5rem; align-items: flex-start; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+
+        .menu-container { flex: 2; display: flex; flex-direction: column; gap: 1.25rem; width: 100%; }
+        .sezione-blocco { background: var(--surface); padding: 1.5rem; border-radius: var(--radius-lg); border: 1px solid var(--border); box-shadow: var(--shadow-sm); transition: background-color 0.3s, border-color 0.3s; }
+        
+        .titolo-sezione { font-size: 0.85rem; font-weight: 700; margin-bottom: 1rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; display: flex; align-items: center; justify-content: space-between; }
+        
+        .barra-filtri-banco { display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: center; }
+        .tab-filtro { padding: 0.5rem 1rem; border: 1px solid var(--border); background: var(--surface); border-radius: var(--radius-sm); font-size: 0.82rem; font-weight: 600; color: var(--text-muted); cursor: pointer; transition: all 0.15s ease; }
+        .tab-filtro:hover { border-color: var(--border-hover); color: var(--text-main); }
+        .tab-filtro.active { background: var(--primary); color: white; border-color: var(--primary); }
+
+        .grid-prodotti { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 0.75rem; }
+        .card-prodotto { border: 1px solid var(--border); border-radius: var(--radius-md); padding: 1rem; display: flex; flex-direction: column; justify-content: space-between; background: var(--surface); cursor: pointer; transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1); min-height: 105px; user-select: none; position: relative; }
+        .card-prodotto:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); border-color: var(--border-hover); }
+        .card-prodotto:active { transform: scale(0.97); background-color: var(--border); }
+        
+        .card-icon { font-size: 1.5rem; margin-bottom: 0.25rem; display: block; opacity: 0.9; }
+        .nome-prodotto { font-weight: 700; font-size: 0.85rem; line-height: 1.3; color: var(--text-main); }
+        .prezzo-prodotto { font-weight: 800; font-size: 0.95rem; color: var(--text-main); margin-top: auto; padding-top: 0.75rem; text-align: right; }
+
+        /* Comanda */
+        .comanda-container { flex: 1; max-width: 400px; width: 100%; background: var(--surface); border-radius: var(--radius-lg); padding: 1.5rem; border: 1px solid var(--border); box-shadow: var(--shadow-md); display: flex; flex-direction: column; position: sticky; top: 5rem; max-height: calc(100vh - 6.5rem); transition: background-color 0.3s; }
+        .input-tavolo { width: 100%; padding: 0.6rem 0.8rem; border: 1px solid var(--border); border-radius: var(--radius-md); font-size: 0.9rem; font-weight: 600; margin-bottom: 0.5rem; background: var(--input-bg); color: var(--text-main); text-align: center; transition: all 0.15s ease; }
+        .input-tavolo:focus { outline: none; border-color: var(--text-main); background: var(--surface); }
+        
+        .lista-comanda { list-style: none; margin-bottom: 1rem; overflow-y: auto; border-top: 1px solid var(--border); padding-top: 0.25rem; overscroll-behavior: contain; flex: 1; }
+        .comanda-vuota-stato { display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--text-light); font-size: 0.8rem; padding: 3rem 1rem; font-weight: 500; text-align: center; gap: 0.5rem; }
+        
+        .item-comanda { display: flex; flex-direction: column; padding: 0.65rem 0; border-bottom: 1px solid var(--border); }
+        .item-riga-alta { display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; }
+        .info-articolo-nome { font-weight: 500; font-size: 0.85rem; color: var(--text-main); }
+        .info-articolo-nome strong { color: var(--text-muted); font-weight: 700; margin-right: 0.25rem; }
+        
+        .nota-variazione { color: var(--text-muted); font-size: 0.72rem; font-weight: 600; margin-top: 0.35rem; cursor: pointer; background: var(--input-bg); padding: 0.35rem 0.6rem; border-radius: var(--radius-sm); width: fit-content; border: 1px solid var(--border); transition: all 0.1s ease; }
+        .nota-variazione:hover { background: var(--border); color: var(--text-main); }
+        
+        .controlli-qta { display: flex; align-items: center; gap: 0.3rem; background: var(--border); padding: 0.25rem; border-radius: var(--radius-sm); }
+        .btn-modifica { background: var(--surface); border: none; width: 28px; height: 28px; border-radius: calc(var(--radius-sm) - 2px); cursor: pointer; font-weight: 700; display: flex; align-items: center; justify-content: center; font-size: 0.9rem; color: var(--text-main); box-shadow: var(--shadow-sm); transition: all 0.1s ease; }
+        .btn-modifica:hover { background: var(--input-bg); transform: scale(1.05); }
+
+        .totale-box { display: flex; flex-direction: column; padding: 0.75rem 0; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); margin-bottom: 0.75rem; }
+        .riga-totale { display: flex; justify-content: space-between; align-items: center; font-size: 0.75rem; font-weight: 700; color: var(--text-muted); letter-spacing: 0.05em; margin-bottom: 0.25rem; }
+        .riga-totale.netto { font-size: 0.85rem; margin-bottom: 0; margin-top: 0.25rem; color: var(--text-main); }
+        .totale-prezzo { font-size: 1.4rem; color: var(--text-main); font-weight: 800; letter-spacing: -0.02em; }
+        
+        /* Blocco Sconto */
+        .blocco-sconto-comanda { display: flex; gap: 0.35rem; align-items: center; margin-bottom: 0.75rem; background: var(--input-bg); padding: 0.5rem; border-radius: var(--radius-md); border: 1px solid var(--border); }
+        .blocco-sconto-comanda label { font-size: 0.72rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; white-space: nowrap; }
+        .blocco-sconto-comanda select { padding: 0.3rem; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface); color: var(--text-main); font-size: 0.78rem; font-weight: 600; }
+        .blocco-sconto-comanda input { flex: 1; width: 100%; padding: 0.3rem 0.5rem; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface); color: var(--text-main); font-size: 0.82rem; font-weight: 700; text-align: right; }
+        
+        .btn-azione { width: 100%; border: none; padding: 0.75rem 1rem; border-radius: var(--radius-md); font-size: 0.88rem; font-weight: 600; cursor: pointer; margin-bottom: 0.5rem; color: var(--text-main); display: flex; justify-content: center; align-items: center; gap: 0.5rem; box-shadow: var(--shadow-sm); transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); background: var(--input-bg); border: 1px solid var(--border); }
+        .btn-azione:hover:not(:disabled) { background: var(--border); transform: translateY(-1px); box-shadow: var(--shadow-md); }
+        .btn-azione:disabled { opacity: 0.4; cursor: not-allowed; transform: none !important; box-shadow: none !important; border-style: dashed; }
+        
+        .btn-stampa-completa { background: var(--primary); color: white; border: none; }
+        .btn-stampa-completa:hover:not(:disabled) { background: var(--primary-hover); }
+        
+        .blocco-pagamento { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-top: 0.25rem; }
+        .btn-paga-contanti { background: #10b981; color: white; font-weight: 700; border: none; }
+        .btn-paga-contanti:hover:not(:disabled) { background: #059669; }
+        .btn-paga-pos { background: #3b82f6; color: white; font-weight: 700; border: none; }
+        .btn-paga-pos:hover:not(:disabled) { background: #2563eb; }
+        
+        .btn-svuota { background: transparent; color: var(--danger); border: 1px solid transparent; box-shadow: none; font-size: 0.82rem; }
+        .btn-svuota:hover:not(:disabled) { background: var(--danger-dim); border-color: rgba(239, 68, 68, 0.2); }
+
+        /* Mobile Sub-Nav per la Cassa */
+        .mobile-cassa-bar { display: none; position: fixed; bottom: 0; left: 0; width: 100%; background: var(--surface); border-top: 1px solid var(--border); z-index: 101; box-shadow: 0 -4px 12px rgba(0,0,0,0.08); }
+        .mobile-sub-btn { flex: 1; padding: 0.85rem; border: none; background: transparent; color: var(--text-muted); font-weight: 700; font-size: 0.9rem; display: flex; align-items: center; justify-content: center; gap: 0.5rem; cursor: pointer; }
+        .mobile-sub-btn.active { color: var(--success); background: var(--input-bg); border-top: 3px solid var(--success); }
+
+        /* Archivio */
+        .archivio-full { width: 100%; display: flex; flex-direction: column; gap: 1.5rem; }
+        .split-archivio { display: flex; gap: 1.5rem; flex-wrap: wrap; }
+        .blocco-sinistro { flex: 1.6; display: flex; flex-direction: column; gap: 1.5rem; min-width: 300px; }
+        .blocco-destro { flex: 1; min-width: 300px; display: flex; flex-direction: column; gap: 1.5rem; }
+        
+        .admin-form { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem; background: var(--input-bg); padding: 1rem; border-radius: var(--radius-md); border: 1px solid var(--border); }
+        .admin-form input, .admin-form select { padding: 0.5rem 0.75rem; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 0.85rem; background: var(--surface); color: var(--text-main); font-weight: 500; flex: 1; min-width: 140px; }
+        
+        .btn-admin-add { background: var(--primary); color: white; border: none; padding: 0.6rem 1.2rem; border-radius: var(--radius-sm); font-weight: 600; font-size: 0.85rem; cursor: pointer; transition: all 0.15s ease; }
+        .btn-admin-add:hover { background: var(--primary-hover); transform: translateY(-1px); box-shadow: var(--shadow-md); }
+
+        .scroll-table { border: 1px solid var(--border); border-radius: var(--radius-md); overflow-x: auto; background: var(--surface); max-height: 400px; }
+        .tabella-base { width: 100%; border-collapse: collapse; font-size: 0.85rem; min-width: 500px; }
+        .tabella-base th, .tabella-base td { padding: 0.75rem 1rem; text-align: left; border-bottom: 1px solid var(--border); }
+        .tabella-base th { background: var(--input-bg); font-weight: 600; color: var(--text-muted); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; position: sticky; top: 0; z-index: 10; }
+        
+        .box-riepilogo-finanziario { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 0.75rem; margin-top: 1rem; }
+        .card-finanziaria { background: var(--surface); border: 1px solid var(--border); padding: 1rem; border-radius: var(--radius-md); box-shadow: var(--shadow-sm); }
+        .card-finanziaria .titolo-f { font-size: 0.68rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); }
+        .card-finanziaria .valore-f { font-size: 1.2rem; font-weight: 700; margin-top: 0.25rem; color: var(--text-main); }
+        
+        .btn-mini-azione { border: 1px solid var(--border); padding: 0.4rem 0.7rem; border-radius: var(--radius-sm); cursor: pointer; font-size: 0.8rem; font-weight: 600; background: var(--surface); color: var(--text-muted); transition: all 0.1s ease; margin-right: 2px; }
+        .btn-mini-azione:hover { background: var(--input-bg); color: var(--text-main); border-color: var(--border-hover); }
+        .btn-mini-modifica { background: var(--input-bg); color: var(--text-main); font-weight: 700; }
+        .btn-mini-elimina { background: var(--danger-dim); color: var(--danger); border-color: transparent; }
+        .btn-mini-elimina:hover { background: var(--danger); color: white; }
+        
+        .backup-block { display: flex; gap: 0.5rem; margin-top: 1rem; padding: 1rem; background: var(--input-bg); border-radius: var(--radius-md); border: 1px dashed var(--border); align-items: center; justify-content: space-between; flex-wrap: wrap; }
+
+        .ricevuta-card-item { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 0.85rem 1rem; margin-bottom: 0.5rem; cursor: pointer; transition: all 0.15s ease; }
+        .ricevuta-card-item:hover { border-color: var(--border-hover); box-shadow: var(--shadow-sm); }
+        .ricevuta-dettaglio { display: none; margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px dashed var(--border); font-size: 0.8rem; color: var(--text-muted); }
+        .ricevuta-card-item.expanded .ricevuta-dettaglio { display: block; }
+        #lista-ricevute-storico { max-height: 400px; overflow-y: auto; }
+        #lista-chiusure-storico { max-height: 300px; overflow-y: auto; }
+
+        #toast-container { position: fixed; bottom: 24px; right: 24px; display: flex; flex-direction: column; gap: 8px; z-index: 9999; }
+        .toast { padding: 0.85rem 1.25rem; border-radius: var(--radius-md); font-weight: 500; font-size: 0.85rem; color: white; box-shadow: var(--shadow-lg); animation: slideIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards; min-width: 280px; background: #0f172a; border: 1px solid rgba(255,255,255,0.1); }
+        .toast.success { border-left: 4px solid var(--success); }
+        .toast.error { border-left: 4px solid var(--danger); }
+        .toast.warning { border-left: 4px solid var(--warning); }
+        .toast.fade-out { animation: fadeOut 0.2s ease-in forwards; }
+        @keyframes slideIn { from { transform: translateY(12px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        @keyframes fadeOut { from { opacity: 1; } to { opacity: 0; } }
+
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(3px); display: none; align-items: center; justify-content: center; z-index: 1000; opacity: 0; transition: opacity 0.15s ease; }
+        .modal-overlay.active { display: flex; opacity: 1; }
+        .modal-box { background: var(--surface); padding: 1.5rem; border-radius: var(--radius-lg); width: 92%; max-width: 380px; box-shadow: var(--shadow-lg); border: 1px solid var(--border); transform: scale(0.95); transition: transform 0.15s ease; color: var(--text-main); }
+        .modal-overlay.active .modal-box { transform: scale(1); }
+        .modal-box h3 { font-size: 1.1rem; font-weight: 700; margin-bottom: 0.75rem; }
+        .modal-box p { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.25rem; line-height: 1.4; }
+        .modal-box input { width: 100%; padding: 0.6rem 0.8rem; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 1rem; margin-bottom: 1.25rem; background: var(--input-bg); color: var(--text-main); }
+        .modal-box input:focus { border-color: var(--primary); outline: none; }
+        .modal-actions { display: flex; gap: 0.5rem; justify-content: flex-end; }
+        .btn-modal { padding: 0.6rem 1.2rem; border-radius: var(--radius-sm); font-weight: 600; font-size: 0.85rem; cursor: pointer; border: none; transition: all 0.1s ease; }
+        .btn-modal.cancel { background: var(--input-bg); color: var(--text-muted); border: 1px solid var(--border); }
+        .btn-modal.cancel:hover { background: var(--border); color: var(--text-main); }
+        .btn-modal.confirm { background: var(--primary); color: white; }
+        .btn-modal.confirm:hover { background: var(--primary-hover); }
+
+        /* Stampa */
+        #blocco-stampa { display: none; }
+        @media print {
+            /* Rimuove data, ora, titolo e URL della pagina dai margini del foglio */
+            @page {
+                margin: 0;
+            }
+            body, .dark-mode { 
+                background: white !important; 
+                color: black !important; 
+                -webkit-print-color-adjust: exact; 
+                print-color-adjust: exact;
+            }
+            /* Nasconde i menu, le finestre e i messaggi dell'app durante la stampa */
+            header, .window-pane, #toast-container, .mobile-cassa-bar, .modal-overlay, .modal-box { 
+                display: none !important; 
+            }
+            #blocco-stampa { 
+                display: block !important; 
+                width: 100%; 
+                margin: 0 auto; 
+                box-sizing: border-box;
+            }
+            .stampa-titolo { 
+                text-align: center; 
+                font-weight: 800; 
+                text-transform: uppercase; 
+                letter-spacing: 0.5px;
+            }
+            .stampa-subtitolo { 
+                text-align: center; 
+                font-weight: 600; 
+                border-bottom: 2px dashed #000; /* Linea tratteggiata più netta stile cassa */
+                padding-bottom: 8px; 
+                margin-bottom: 12px; 
+            }
+            
+            /* Struttura della Tabella Prodotti */
+            .stampa-tabella { 
+                width: 100%; 
+                border-collapse: collapse; 
+            }
+            .stampa-tabella td {
+                padding: 4px 0;
+                vertical-align: top;
+            }
+            /* FORZATURA ESTETICA RICEVUTA: Spinge il prezzo tutto a destra e impedisce che vada a capo */
+            .stampa-tabella td:last-child {
+                text-align: right !important;
+                white-space: nowrap;
+                padding-left: 10px;
+            }
+            
+            .stampa-totale { 
+                text-align: right; 
+                font-weight: 800; 
+                border-top: 2px dashed #000; 
+                padding-top: 6px; 
+                margin-top: 10px; 
+            }
+
+            /* --- NUOVA BANDA NERA SEPARATA PER TAVOLO/CLIENTE --- */
+            .stampa-tavolo-reparto {
+                font-size: 18pt !important; /* Stessa altezza del titolo reparto cucina/bar */
+                font-weight: bold !important;
+                text-align: center !important;
+                background-color: #000 !important; /* Banda nera come il reparto */
+                color: #fff !important;          /* Testo bianco ad alto contrasto */
+                padding: 6px 0 !important;
+                margin-top: 5px !important;
+                margin-bottom: 12px !important;
+                text-transform: uppercase !important;
+                border-radius: 4px;
+                display: block !important;
+            }
+
+            /* --- PARAMETRI ROTOLO TERMICO 80MM (RICEVUTA STANDARD CLIENTE) --- */
+            body.format-print-80mm {
+                padding: 5mm 4mm 8mm 4mm; /* Margini di sicurezza per non far toccare la carta ai bordi */
+            }
+            body.format-print-80mm #blocco-stampa { 
+                max-width: 72mm; /* Tolleranza ideale per stampanti termiche da 80mm */
+                font-family: 'Courier New', Courier, monospace; 
+                font-size: 10pt; 
+                line-height: 1.3;
+            }
+            body.format-print-80mm .stampa-titolo { font-size: 13pt; margin-bottom: 4px; }
+            body.format-print-80mm .stampa-subtitolo { font-size: 9pt; }
+            body.format-print-80mm .stampa-totale { font-size: 14pt; }
+
+
+            /* ==========================================================================
+               OTTIMIZZAZIONE REPARTI (CUCINA E BAR) - SOLO SE FORMATO 80MM
+               Se nel blocco stampa manca il totale economico, stiamo stampando una comanda!
+               ========================================================================== */
+            
+            /* Contenitore principale della comanda cucina/bar */
+            body.format-print-80mm:not(:has(.stampa-totale)) #blocco-stampa {
+                max-width: 74mm !important;
+                line-height: 1.4 !important;
+            }
+            
+            /* Trasforma l'intestazione (CUCINA o BAR) in una banda nera con testo bianco ad altissimo contrasto */
+            body.format-print-80mm:not(:has(.stampa-totale)) .stampa-titolo {
+                font-size: 18pt !important;
+                background-color: #000 !important;
+                color: #fff !important;
+                padding: 6px 0 !important;
+                margin-bottom: 8px !important;
+                border-radius: 4px;
+            }
+
+            /* Ingrandisce a dismisura i piatti e le quantità per renderli visibili sotto stress */
+            body.format-print-80mm:not(:has(.stampa-totale)) .stampa-tabella td {
+                font-weight: bold !important; 
+                font-size: 16pt !important; /* Caratteri giganti per le comande */
+                padding: 8px 0 !important;   /* Ampio spazio verticale tra le righe per evitare errori */
+                border-bottom: 1px dashed #bbb !important; /* Linea tratteggiata di fine riga */
+            }
+
+            /* Nasconde l'ultima colonna della tabella (quella che conterrebbe i prezzi o spazi vuoti) */
+            body.format-print-80mm:not(:has(.stampa-totale)) .stampa-tabella td:last-child {
+                display: none !important;
+            }
+
+
+            /* --- PARAMETRI FOGLIO GRANDE A4 --- */
+            body.format-print-a4 {
+                padding: 15mm;
+            }
+            body.format-print-a4 #blocco-stampa { 
+                max-width: 210mm; 
+                font-family: 'Plus Jakarta Sans', system-ui, sans-serif; 
+                font-size: 11pt; 
+                line-height: 1.5;
+            }
+            body.format-print-a4 .stampa-titolo { font-size: 18pt; margin-bottom: 6px; text-align: left; }
+            body.format-print-a4 .stampa-subtitolo { font-size: 10pt; padding-bottom: 10px; margin-bottom: 20px; border-bottom: 1px solid #000; text-align: left; color: #475569; }
+            body.format-print-a4 .stampa-tabella td { padding: 8px 0; border-bottom: 1px solid #e2e8f0; }
+            body.format-print-a4 .stampa-totale { font-size: 15pt; border-top: 2px solid #000; padding-top: 10px; margin-top: 20px; }
+        }
+
+        /* --- RESPONSIVITÀ PER SMARTPHONE E TABLET --- */
+        @media (max-width: 1024px) {
+            .window-pane.active { flex-direction: column; gap: 1rem; }
+            
+            /* Attivazione della bottom bar per switchare Menu e Carrello */
+            .mobile-cassa-bar { display: flex; }
+            
+            #pane-cassa.active { padding-bottom: 4.5rem; }
+            
+            /* Nascondi o mostra in base allo stato dello switch mobile */
+            #pane-cassa.mobile-view-comanda .menu-container { display: none; }
+            #pane-cassa.mobile-view-comanda .comanda-container { display: flex; max-width: 100%; position: static; max-height: none; box-shadow: var(--shadow-sm); }
+            
+            #pane-cassa:not(.mobile-view-comanda) .menu-container { display: flex; }
+            #pane-cassa:not(.mobile-view-comanda) .comanda-container { display: none; }
+            
+            .split-archivio { flex-direction: column; }
+            .blocco-sinistro, .blocco-destro { width: 100%; min-width: 100%; }
+            .grid-stats-archivio { grid-template-columns: 1fr !important; gap: 1rem !important; }
+        }
+        
+        @media (max-width: 600px) {
+            header { padding: 0.5rem 0.75rem; gap: 0.5rem; }
+            .brand h1 { font-size: 1rem; }
+            .nav-buttons { width: 100%; order: 3; }
+            .btn-nav { flex: 1; justify-content: center; padding: 0.5rem; font-size: 0.8rem; }
+            .header-tools { width: 100%; justify-content: space-between; }
+            #data-ora { margin-left: 0; font-size: 0.75rem; padding: 0.3rem 0.6rem; }
+            
+            .grid-prodotti { grid-template-columns: repeat(auto-fill, minmax(135px, 1fr)); gap: 0.5rem; }
+            .card-prodotto { min-height: 95px; padding: 0.75rem; }
+            .nome-prodotto { font-size: 0.8rem; }
+            .prezzo-prodotto { font-size: 0.9rem; padding-top: 0.5rem; }
+            
+            .window-pane { padding: 0.75rem; }
+            .sezione-blocco { padding: 1rem; border-radius: var(--radius-md); }
+            
+            /* Ingrandimento touch target pulsanti quantità */
+            .btn-modifica { width: 34px; height: 34px; font-size: 1.1rem; }
+            
+            /* Evita lo zoom forzato dei browser mobile portando gli input a 16px */
+            .input-tavolo, #ricerca-banco, .admin-form input, .admin-form select, .modal-box input { font-size: 16px !important; }
+            
+            #toast-container { left: 12px; right: 12px; bottom: 65px; }
+            .toast { min-width: auto; width: 100%; }
+        }
+    
+        /* --- BARRA DI NAVIGAZIONE TOP-TIER ULTIMATE (STILE NATIVO MOBILE CON SWIPE FLUIDO) --- */
+        .nav-buttons { 
+            display: flex; 
+            gap: 6px; 
+            background: var(--bg-main); 
+            padding: 5px; 
+            border-radius: 16px; 
+            align-items: center;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.04);
+            border: 1px solid var(--border);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            overflow-x: auto; /* Permette lo swipe orizzontale su telefoni o tablet stretti senza andare a capo */
+            white-space: nowrap;
+            scrollbar-width: none; /* Nasconde scrollbar su Firefox */
+            -ms-overflow-style: none; /* Nasconde scrollbar su IE */
+            max-width: 100%;
+        }
+        
+        .nav-buttons::-webkit-scrollbar {
+            display: none; /* Nasconde scrollbar su Chrome, Safari e iOS */
+        }
+        
+        body.dark-mode .nav-buttons {
+            background: rgba(15, 23, 42, 0.6);
+            border-color: rgba(255, 255, 255, 0.08);
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        
+        .btn-nav { 
+            background: transparent; 
+            border: none; 
+            color: var(--text-muted); 
+            padding: 0.65rem 1.4rem; 
+            border-radius: 11px; 
+            font-weight: 600; 
+            font-size: 0.88rem; 
+            cursor: pointer; 
+            transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1); /* Transizione ad effetto rimbalzo premium */
+            display: inline-flex; 
+            align-items: center; 
+            gap: 0.6rem; 
+            user-select: none;
+            position: relative;
+            z-index: 1;
+        }
+        
+        /* Linea di accento inferiore ultra-sottile per evidenziare il tab attivo */
+        .btn-nav::after {
+            content: '';
+            position: absolute;
+            bottom: 4px;
+            left: 50%;
+            transform: translateX(-50%) scaleX(0);
+            width: 16px;
+            height: 3px;
+            background-color: var(--primary);
+            border-radius: 2px;
+            transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        
+        /* Feedback al passaggio del cursore o sfioramento */
+        .btn-nav:hover:not(.active) { 
+            color: var(--text-main); 
+            background: rgba(255, 255, 255, 0.5); 
+        }
+        
+        body.dark-mode .btn-nav:hover:not(.active) {
+            background: rgba(255, 255, 255, 0.04);
+        }
+        
+        /* Effetto pressione con compressione dinamica molto piacevole al tocco */
+        .btn-nav:active {
+            transform: scale(0.93);
+        }
+
+        /* Pulsante Attivo - Rialzato tridimensionalmente con ombreggiatura morbida e attiva */
+        .btn-nav.active { 
+            background: var(--surface) !important; 
+            color: var(--primary) !important; 
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.03) !important; 
+            font-weight: 700; 
+        }
+        
+        .btn-nav.active::after {
+            transform: translateX(-50%) scaleX(1);
+        }
+        
+        body.dark-mode .btn-nav.active {
+            background: #1e293b !important;
+            color: #3b82f6 !important;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15), 0 1px 2px rgba(0, 0, 0, 0.2) !important;
+        }
+        
+        body.dark-mode .btn-nav.active::after {
+            background-color: #3b82f6;
+        }
+
+        /* Supporto per lo switch dinamico "Nota Auto" */
+        .switch-auto-nota {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.78rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            padding: 6px 12px;
+            border-radius: 11px;
+            background: rgba(255, 255, 255, 0.3);
+            margin-right: 4px;
+            border: 1px solid rgba(0, 0, 0, 0.02);
+            user-select: none;
+            transition: all 0.25s ease;
+        }
+        
+        body.dark-mode .switch-auto-nota {
+            background: rgba(0, 0, 0, 0.25);
+            border-color: rgba(255, 255, 255, 0.04);
+        }
+        
+        .switch-auto-nota input[type="checkbox"] {
+            accent-color: var(--success);
+            cursor: pointer;
+            width: 14px;
+            height: 14px;
+        }
+
+    </style>
+    <script src="https://unpkg.com/mqtt@5.10.1/dist/mqtt.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js"></script>
+
+    <style>
+        /* Ottimizzazione scorrimento e accelerazione hardware contro vibrazioni palmari */
+        .corpo-scheda-palmare, .griglia-prodotti, .lista-comanda-corpo {
+            -webkit-overflow-scrolling: touch !important;
+            overscroll-behavior-y: contain !important;
+            scroll-behavior: smooth !important;
+        }
+        .scheda-comanda-palmare, .card-prodotto, .item-comanda {
+            transform: translate3d(0, 0, 0) !important;
+            backface-visibility: hidden !important;
+            perspective: 1000px !important;
+        }
+    
+        /* --- BARRA DI NAVIGAZIONE TOP-TIER ULTIMATE (STILE NATIVO MOBILE CON SWIPE FLUIDO) --- */
+        .nav-buttons { 
+            display: flex; 
+            gap: 6px; 
+            background: var(--bg-main); 
+            padding: 5px; 
+            border-radius: 16px; 
+            align-items: center;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.04);
+            border: 1px solid var(--border);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            overflow-x: auto; /* Permette lo swipe orizzontale su telefoni o tablet stretti senza andare a capo */
+            white-space: nowrap;
+            scrollbar-width: none; /* Nasconde scrollbar su Firefox */
+            -ms-overflow-style: none; /* Nasconde scrollbar su IE */
+            max-width: 100%;
+        }
+        
+        .nav-buttons::-webkit-scrollbar {
+            display: none; /* Nasconde scrollbar su Chrome, Safari e iOS */
+        }
+        
+        body.dark-mode .nav-buttons {
+            background: rgba(15, 23, 42, 0.6);
+            border-color: rgba(255, 255, 255, 0.08);
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        
+        .btn-nav { 
+            background: transparent; 
+            border: none; 
+            color: var(--text-muted); 
+            padding: 0.65rem 1.4rem; 
+            border-radius: 11px; 
+            font-weight: 600; 
+            font-size: 0.88rem; 
+            cursor: pointer; 
+            transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1); /* Transizione ad effetto rimbalzo premium */
+            display: inline-flex; 
+            align-items: center; 
+            gap: 0.6rem; 
+            user-select: none;
+            position: relative;
+            z-index: 1;
+        }
+        
+        /* Linea di accento inferiore ultra-sottile per evidenziare il tab attivo */
+        .btn-nav::after {
+            content: '';
+            position: absolute;
+            bottom: 4px;
+            left: 50%;
+            transform: translateX(-50%) scaleX(0);
+            width: 16px;
+            height: 3px;
+            background-color: var(--primary);
+            border-radius: 2px;
+            transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        
+        /* Feedback al passaggio del cursore o sfioramento */
+        .btn-nav:hover:not(.active) { 
+            color: var(--text-main); 
+            background: rgba(255, 255, 255, 0.5); 
+        }
+        
+        body.dark-mode .btn-nav:hover:not(.active) {
+            background: rgba(255, 255, 255, 0.04);
+        }
+        
+        /* Effetto pressione con compressione dinamica molto piacevole al tocco */
+        .btn-nav:active {
+            transform: scale(0.93);
+        }
+
+        /* Pulsante Attivo - Rialzato tridimensionalmente con ombreggiatura morbida e attiva */
+        .btn-nav.active { 
+            background: var(--surface) !important; 
+            color: var(--primary) !important; 
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.03) !important; 
+            font-weight: 700; 
+        }
+        
+        .btn-nav.active::after {
+            transform: translateX(-50%) scaleX(1);
+        }
+        
+        body.dark-mode .btn-nav.active {
+            background: #1e293b !important;
+            color: #3b82f6 !important;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15), 0 1px 2px rgba(0, 0, 0, 0.2) !important;
+        }
+        
+        body.dark-mode .btn-nav.active::after {
+            background-color: #3b82f6;
+        }
+
+        /* Supporto per lo switch dinamico "Nota Auto" */
+        .switch-auto-nota {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.78rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            padding: 6px 12px;
+            border-radius: 11px;
+            background: rgba(255, 255, 255, 0.3);
+            margin-right: 4px;
+            border: 1px solid rgba(0, 0, 0, 0.02);
+            user-select: none;
+            transition: all 0.25s ease;
+        }
+        
+        body.dark-mode .switch-auto-nota {
+            background: rgba(0, 0, 0, 0.25);
+            border-color: rgba(255, 255, 255, 0.04);
+        }
+        
+        .switch-auto-nota input[type="checkbox"] {
+            accent-color: var(--success);
+            cursor: pointer;
+            width: 14px;
+            height: 14px;
+        }
+
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="brand">
+            <h1>SmartCassa Pro</h1>
+            <span>Mobile Ready</span>
+        </div>
+        <div class="nav-buttons">
+            <button id="nav-cassa" class="btn-nav active" aria-label="Cassa" onclick="cambiaFinestra('CASSA')" title="Scorciatoia: F1">📊 Cassa</button>
+            <button id="nav-palmari" class="btn-nav" aria-label="Palmari e Parcheggia" onclick="cambiaFinestra('PALMARI')" title="Scorciatoia: F3">📱 Palmari/Parcheggia</button>
+            <button id="nav-archivio" class="btn-nav" aria-label="Impostazioni e Archivio" onclick="cambiaFinestra('ARCHIVIO')" title="Scorciatoia: F2">⚙️ Impostazioni</button>
+        </div>
+        <div class="header-tools">
+            <button id="anteprima-toggle" class="theme-toggle" aria-label="Attiva/Disattiva Anteprima Stampa" onclick="toggleAnteprima()" title="Attiva/Disattiva Anteprima Stampa">👁️</button>
+            <button id="theme-toggle" class="theme-toggle" aria-label="Cambia Tema" onclick="toggleTheme()" title="Cambia Tema">🌙</button>
+            <button id="print-a4-toggle" class="theme-toggle" aria-label="Formato Stampa A4" onclick="setPrintFormat('A4')" title="Formato Stampa A4">📄</button>
+            <button id="print-80mm-toggle" class="theme-toggle" aria-label="Formato Stampa 80mm" onclick="setPrintFormat('80MM')" title="Formato Stampa Termica 80mm">🧾</button>
+            <div id="data-ora">--:--:--</div>
+        </div>
+    </header>
+
+    <div id="pane-cassa" class="window-pane active">
+        <div class="menu-container">
+            <div class="sezione-blocco" style="padding: 1rem; display: flex; gap: 1rem; flex-wrap: wrap; align-items: center; justify-content: space-between;">
+                <input type="text" id="ricerca-banco" class="input-tavolo" placeholder="🔍 Cerca (premi Invio per aggiungere)" style="margin-bottom: 0; max-width: 300px; text-align: left;" oninput="impostaFiltroRicerca(this.value)">
+                <div class="barra-filtri-banco" id="contenitore-tabs-banco"></div>
+            </div>
+            <div id="contenitore-banco-categorie" style="display: flex; flex-direction: column; gap: 1.25rem;"></div>
+        </div>
+
+        <aside class="comanda-container">
+            <input type="text" id="intestazione-ricevuta" class="input-tavolo" placeholder="Intestazione Formale / Ragione Sociale" autocomplete="off" style="font-weight: 500; font-size: 0.8rem; border-color: var(--border-hover);" oninput="localforage.setItem('st_intestazione_fissa_v7', this.value).catch(err => console.error(err))">
+            <input type="text" id="num-tavolo" class="input-tavolo" placeholder="Tavolo / Nome Cliente" autocomplete="off">
+            
+            <ul class="lista-comanda" id="corpo-comanda"></ul>
+
+            <div class="blocco-sconto-comanda">
+                <label for="tipo-sconto">Sconto:</label>
+                <select id="tipo-sconto" onchange="aggiornaInterfacciaComanda()">
+                    <option value="PERCENTUALE">% Percentuale</option>
+                    <option value="FISSO">€ Valore Fisso</option>
+                </select>
+                <input type="number" id="valore-sconto" min="0" step="0.01" value="0" oninput="aggiornaInterfacciaComanda()" placeholder="0">
+            </div>
+
+            <div class="totale-box">
+                <div id="riga-subtotale-box" class="riga-totale" style="display: none; margin-bottom: 0.35rem;">
+                    <span>SUBTOTALE NETTO</span>
+                    <span id="subtotale-comanda">0,00 €</span>
+                </div>
+                <div id="riga-valore-sconto-box" class="riga-totale" style="display: none; color: var(--danger); margin-bottom: 0.35rem;">
+                    <span>SCONTO APPLICATO</span>
+                    <span id="esito-sconto-comanda">-0,00 €</span>
+                </div>
+                <div class="riga-totale netto">
+                    <span>TOTALE DA PAGARE</span>
+                    <span id="totale-comanda" class="totale-prezzo">0,00 €</span>
+                </div>
+            </div>
+            
+            <button id="btn-azione-ricevuta" class="btn-azione btn-stampa-completa" onclick="avviaStampa('CLIENTE')" disabled>🖨️ Stampa Ricevuta</button>
+            
+            <div style="display: flex; gap: 0.5rem;">
+                <button id="btn-azione-cucina" class="btn-azione" onclick="avviaStampa('CUCINA')" disabled>📋 Cucina</button>
+                <button id="btn-azione-bar" class="btn-azione" onclick="avviaStampa('BAR')" disabled>☕ Bar</button>
+            </div>
+            
+            <div class="blocco-pagamento">
+                <button id="btn-azione-contanti" class="btn-azione btn-paga-contanti" onclick="apriModalResto()" title="Scorciatoia: Barra Spaziatrice" disabled>💶 Contanti</button>
+                <button id="btn-azione-pos" class="btn-azione btn-paga-pos" onclick="chiudiEArchiviaOrdine('POS')" disabled>💳 POS</button>
+            </div>
+            
+            <div style="display: flex; gap: 0.5rem; margin-top: 0.25rem;">
+                <button id="btn-azione-parcheggia" class="btn-azione btn-svuota" style="color: var(--warning); border-color: transparent;" onclick="riparcheggiaComanda()" disabled>⏸️ Parcheggia</button>
+                <button id="btn-azione-svuota" class="btn-azione btn-svuota" onclick="svuotaComanda()" disabled>Annulla operazione</button>
+            </div>
+        </aside>
+
+        <div class="mobile-cassa-bar">
+            <button id="mb-btn-menu" class="mobile-sub-btn active" onclick="switchMobileCassaView('menu')">🍽️ Vedi Menu</button>
+            <button id="mb-btn-comanda" class="mobile-sub-btn" onclick="switchMobileCassaView('comanda')">🛒 Comanda (<span id="mb-totale-badge">0,00 €</span>)</button>
+        </div>
+    </div>
+
+    <div id="pane-comande-palmari" class="window-pane">
+        <div class="sezione-blocco" style="width: 100%;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                <h2 class="titolo-sezione" style="margin-bottom: 0;">
+                    📱 Gestione Palmari e Comande Parcheggiate 
+                    <span id="counter-palmari" style="display:none; background:var(--danger); color:white; padding:2px 8px; border-radius:10px; font-size:0.75rem; margin-left:10px;">0 Nuove</span>
+                </h2>
+            </div>
+            
+            <div id="messaggio-vuoto-palmari" style="text-align: center; padding: 4rem 1rem; color: var(--text-light); font-weight: 500;">
+                <div style="font-size: 3.5rem; margin-bottom: 1rem; opacity: 0.5;">📭</div>
+                Nessuna comanda in attesa o parcheggiata.
+            </div>
+            
+            <div id="lista-comande-palmari" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1.25rem;">
+                </div>
+        </div>
+    </div>
+
+    <div id="pane-archivio" class="window-pane">
+        <div class="archivio-full">
+            <div class="split-archivio">
+                
+                <div class="blocco-sinistro">
+                    
+                    <div class="sezione-blocco grid-stats-archivio" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+                        <div>
+                            <h2 class="titolo-sesection" style="color: var(--primary);">📈 Top 5 Prodotti</h2>
+                            <div id="grafico-top5" style="margin-top: 1rem;"></div>
+                        </div>
+                        <div>
+                            <h2 class="titolo-sezione" style="color: var(--info);">🕒 Ore di Picco (Incassi)</h2>
+                            <div id="grafico-ore" style="margin-top: 1rem; border-bottom: 1px solid var(--border); padding-bottom: 5px;"></div>
+                        </div>
+                    </div>
+
+                    <div class="sezione-blocco">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
+                            <h2 class="titolo-sezione" style="margin-bottom: 0;">Report Vendite Giornaliero</h2>
+                            <button class="btn-mini-azione" onclick="esportaReportCSV()" style="font-weight:700;">📊 Scarica Excel (CSV)</button>
+                        </div>
+                        <div class="scroll-table">
+                            <table class="tabella-base">
+                                <thead>
+                                    <tr>
+                                        <th>Articolo</th>
+                                        <th>Categoria</th>
+                                        <th>Q.tà Venduta</th>
+                                        <th>Totale Incassato (€)</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="corpo-report-vendite"></tbody>
+                            </table>
+                        </div>
+                        <div class="box-riepilogo-finanziario">
+                            <div class="card-finanziaria" style="border-left: 4px solid var(--success);">
+                                <div class="titolo-f">💵 Incasso Contanti</div>
+                                <div class="valore-f" id="fin-contanti">0,00 €</div>
+                            </div>
+                            <div class="card-finanziaria" style="border-left: 4px solid var(--info);">
+                                <div class="titolo-f">💳 Incasso POS</div>
+                                <div class="valore-f" id="fin-pos">0,00 €</div>
+                            </div>
+                            <div class="card-finanziaria" style="border-left: 4px solid var(--text-main); background: var(--input-bg);">
+                                <div class="titolo-f" style="font-weight:700;">🏁 INCASSO TOTALE</div>
+                                <div class="valore-f" id="fin-totale" style="font-weight:800;">0,00 €</div>
+                            </div>
+                        </div>
+                        <button class="btn-azione" style="background: var(--danger-dim); color: var(--danger); border-color:transparent; font-weight:700; margin-top:1.25rem; margin-bottom:0;" onclick="apriModalAzzera()">🏁 Esegui Chiusura Serale Z</button>
+                    </div>
+
+                    <div class="sezione-blocco">
+                        <h2 class="titolo-sezione">📦 Monitoraggio Scorte (Magazzino Intelligente)</h2>
+                        <p style="font-size:0.78rem; color:var(--text-muted); margin-bottom:1rem; line-height:1.4;">
+                            Configura delle parole chiave. Ad ogni vendita, il sistema cercherà le parole chiave (es: "Coca", "Crudo") nel nome di ogni articolo venduto e scalerà la quantità corrispondente.
+                        </p>
+                        <div class="admin-form" id="blocco-modulo-magazzino">
+                            <input type="text" id="magazzino-parola" placeholder="Parola chiave (es: Coca)" autocomplete="off">
+                            <input type="number" id="magazzino-qta" placeholder="Scorta attuale (es: 100)" step="1">
+                            <button class="btn-admin-add" onclick="aggiungiOModificaMagazzino()">Salva</button>
+                        </div>
+                        <div class="scroll-table" style="max-height: 250px;">
+                            <table class="tabella-base">
+                                <thead>
+                                    <tr>
+                                        <th>Parola Chiave</th>
+                                        <th>Quantità Disponibile</th>
+                                        <th style="text-align: right;">Azioni</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="lista-controllo-magazzino"></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="sezione-blocco">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
+                            <h2 class="titolo-sezione" id="titolo-modulo-admin" style="margin-bottom: 0;">Anagrafica Articoli</h2>
+                            <select id="filtro-categoria-admin" style="padding: 0.4rem 0.6rem; font-size: 0.8rem; border-radius: var(--radius-sm); border: 1px solid var(--border); background:var(--surface); color:var(--text-main);" onchange="aggiornaTabellaReportEListino()">
+                                <option value="TUTTE">Tutte le Categorie</option>
+                            </select>
+                        </div>
+                        <div class="admin-form" id="blocco-modulo-admin">
+                            <input type="text" id="nuovo-nome" placeholder="Nome articolo" autocomplete="off">
+                            <input type="number" id="nuovo-prezzo" placeholder="Prezzo (€)" step="0.05">
+                            <select id="nuova-categoria"></select>
+                            <button class="btn-admin-add" id="btn-salva-articolo" onclick="aggiungiOAggiornaProdottoAlListinoMenu()">Salva</button>
+                            <button class="btn-admin-add" id="btn-annulla-articolo" onclick="annullaStatoModifica()" style="background:var(--border); color:var(--text-main); display:none;">Annulla</button>
+                        </div>
+                        <div class="scroll-table">
+                            <table class="tabella-base">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 80px;">Sposta</th>
+                                        <th>Nome Prodotto</th>
+                                        <th>Categoria</th>
+                                        <th>Prezzo</th>
+                                        <th>Stato</th>
+                                        <th style="text-align: right;">Azioni</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="lista-controllo-menu"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="blocco-destro">
+                    <div class="sezione-blocco">
+                        <h2 class="titolo-sezione" style="color: var(--primary);">🌐 Rete & Connessione Palmari</h2>
+                        <p style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 1rem; line-height: 1.4;">Imposta l'ID della stanza per connettere i palmari in rete (deve essere identico su cassa e palmari).</p>
+                        <div class="admin-form">
+                            <input type="text" id="input-hotspot-id" placeholder="Es. Cassa_MioHotspot" autocomplete="off">
+                            <button class="btn-admin-add" onclick="salvaHotspotCassa()">Applica e Riconnetti</button>
+                        </div>
+                    </div>
+
+                    <div class="sezione-blocco">
+                        <h2 class="titolo-sezione">🗂️ Gestione Categorie</h2>
+                        <div class="admin-form" style="margin-bottom: 1rem;">
+                            <input type="text" id="nuova-cat-nome" placeholder="Nome Nuova Categoria" autocomplete="off">
+                            <button class="btn-admin-add" id="btn-salva-cat" onclick="aggiungiOModificaCategoria()">Aggiungi</button>
+                            <button class="btn-admin-add" id="btn-annulla-cat" onclick="annullaModificaCategoria()" style="background:var(--border); color:var(--text-main); display:none;">X</button>
+                        </div>
+                        <div class="scroll-table" style="max-height: 280px;">
+                            <table class="tabella-base">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 80px;">Ord.</th>
+                                        <th>Categoria</th>
+                                        <th>Icona/Colore</th>
+                                        <th style="text-align: right;">Azioni</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="lista-controllo-categorie"></tbody>
+                            </table>
+                        </div>
+                        <div class="backup-block">
+                            <span style="font-size:0.75rem; font-weight:600; color:var(--text-muted);">Ripristino Generale:</span>
+                            <button class="btn-mini-azione btn-mini-elimina" onclick="if(confirm('Attenzione: questo cancellerà tutti i prodotti e caricherà il menu di fabbrica standard. Procedere?')) forzaResetCategorieNuove()">Reset di Fabbrica</button>
+                        </div>
+                    </div>
+
+                    <div class="sezione-blocco">
+                        <h2 class="titolo-sezione">🧾 Registro Scontrini Emessi</h2>
+                        <div id="lista-ricevute-storico"></div>
+                    </div>
+
+                    <div class="sezione-blocco">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+                            <h2 class="titolo-sezione" style="margin-bottom:0;">🗄️ Storico Chiusure Z</h2>
+                            <button class="btn-mini-azione btn-mini-elimina" onclick="apriModalAzzeraStorico()">Svuota Storico</button>
+                        </div>
+                        <div id="lista-chiusure-storico"></div>
+                    </div>
+
+                    <div class="sezione-blocco">
+                        <h2 class="titolo-sezione">💾 Salvataggio & Sicurezza dati</h2>
+                        <p style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 1rem; line-height: 1.4;">Scarica un file locale contenente tutte le configurazioni, scontrini, vendite e magazzino per metterlo al sicuro o trasferirlo.</p>
+                        <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+                            <button class="btn-azione" style="flex:1; margin-bottom:0; font-weight:700;" onclick="esportaBackupCompletoJSON()">📥 Esporta Configurazione</button>
+                            <button class="btn-azione" style="flex:1; margin-bottom:0; font-weight:700;" onclick="document.getElementById('file-import-json').click()">📤 Importa Configurazione</button>
+                        </div>
+                        <input type="file" id="file-import-json" style="display:none" accept=".json" onchange="importaBackupCompletoJSON(event)">
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <div id="toast-container"></div>
+
+    <div class="modal-overlay" id="modal-resto">
+        <div class="modal-box">
+            <h3>💶 Calcolo Resto Contanti</h3>
+            <p style="margin-bottom: 0.75rem;">Totale comanda: <strong id="resto-modal-totale">0,00 €</strong></p>
+            <label style="font-size: 0.75rem; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 0.25rem;">CONTANTE RICEVUTO</label>
+            <input type="number" id="input-contante" step="0.01" placeholder="0.00" oninput="calcolaRestoIstantaneo()">
+            <div style="background: var(--input-bg); padding: 0.75rem; border-radius: var(--radius-sm); border: 1px solid var(--border); margin-bottom: 1.25rem; text-align: center;">
+                <span style="font-size: 0.75rem; font-weight: 700; color: var(--text-muted); display: block; text-transform: uppercase;">Resto da consegnare</span>
+                <span id="testo-resto-calcolato" style="font-size: 1.5rem; font-weight: 800; color: var(--success);">0,00 €</span>
+            </div>
+            <div class="modal-actions">
+                <button class="btn-modal cancel" onclick="chiudiModalResto()">Annulla</button>
+                <button class="btn-modal confirm" id="btn-conferma-resto" onclick="confermaPagamentoContanti()">Chiudi e Archivia</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modal-nota">
+        <div class="modal-box">
+            <h3>✏️ Modifica Nota Variazione</h3>
+            <p>Inserisci una variante o nota per la preparazione (es: "Senza cipolla", "Ben cotta").</p>
+            <input type="text" id="input-modal-nota" placeholder="Es: Senza maionese, No ghiaccio..." autocomplete="off">
+            <div class="modal-actions">
+                <button class="btn-modal cancel" onclick="chiudiModalNota()">Annulla</button>
+                <button class="btn-modal confirm" onclick="salvaModalNota()">Salva</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modal-anteprima">
+        <div class="modal-box" style="max-width: 450px; width: 95%;">
+            <h3>👁️ Anteprima di Stampa</h3>
+            <div id="anteprima-stampa-corpo" style="background: white; color: black; padding: 15px; border: 1px solid #cbd5e1; max-height: 380px; overflow-y: auto; margin-bottom: 1.25rem; border-radius: var(--radius-md); box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);"></div>
+            <div class="modal-actions">
+                <button class="btn-modal cancel" onclick="chiudiModalAnteprima()">Chiudi</button>
+                <button class="btn-modal confirm" onclick="confermaStampaFisica()">🖨️ Stampa</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modal-azzera">
+        <div class="modal-box">
+            <h3 style="color: var(--danger);">Chiusura Giornaliera</h3>
+            <p>Sei sicuro di voler chiudere la giornata? I dati attuali verranno salvati nello Storico Chiusure e la cassa verrà azzerata per il nuovo turno.</p>
+            <div class="modal-actions">
+                <button class="btn-modal cancel" onclick="chiudiModalAzzera()">Annulla</button>
+                <button class="btn-modal confirm" style="background: var(--danger); color: white;" onclick="azzeraTuttoIlSistema()">Conferma Chiusura</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modal-azzera-storico">
+        <div class="modal-box">
+            <h3 style="color: var(--danger);">Svuota Storico Chiusure</h3>
+            <p>Attenzione: sei sicuro di voler cancellare in modo permanente tutto lo storico delle chiusure serali archiviate? L'operazione non è reversibile.</p>
+            <div class="modal-actions">
+                <button class="btn-modal cancel" onclick="chiudiModalAzzeraStorico()">Annulla</button>
+                <button class="btn-modal confirm" style="background: var(--danger); color: white;" onclick="azzeraStoricoChiusure()">Svuota Storico</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="blocco-stampa"></div>
+
+    <script>
+        const formatPrintKey = 'st_formato_stampa_v7';
+        let isDarkMode = localStorage.getItem('st_dark_mode') === 'true';
+        let printFormat = localStorage.getItem(formatPrintKey) || '80MM';
+
+        // Identificativo per la connessione rete Palmare-Cassa
+        let STANZA_HOTSPOT_CONDIVISA = localStorage.getItem('st_hotspot_id_v7');
+        if (!STANZA_HOTSPOT_CONDIVISA) {
+            STANZA_HOTSPOT_CONDIVISA = 'Cassa_' + Array.from(crypto.getRandomValues(new Uint8Array(6))).map(b => (b % 36).toString(36)).join('');
+            localStorage.setItem('st_hotspot_id_v7', STANZA_HOTSPOT_CONDIVISA);
+        }
+
+        if(isDarkMode) document.body.classList.add('dark-mode');
+        
+        const categoriePredefinite = ["piadine", "panini", "piatti", "bevande", "caffetteria e amari", "cocktail", "gelati"];
+        const paletteColori = ["#0f172a", "#3b82f6", "#10b981", "#ec4899", "#8b5cf6", "#6366f1", "#14b8a6", "#ef4444"];
+
+        function getEmojiPerCategoria(cat) {
+            if (!cat) return '🍽️';
+            if (configCategorie[cat] && configCategorie[cat].icon) {
+                return configCategorie[cat].icon;
+            }
+            const m = {
+                'piadine':'🥙', 'panini':'🍔', 'piatti':'🍝',
+                'bevande':'🥤', 'caffetteria e amari':'☕', 'cocktail':'🍹', 'gelati':'🍦'
+            };
+            return m[cat.toLowerCase()] || '🍽️';
+        }
+
+        const menuPredefinito = [
+            { id: 1, categoria: "piadine", nome: "Piadina Crudo e Fontina", prezzo: 6.50, attivo: true },
+            { id: 2, categoria: "piadine", nome: "Piadina Cotto e Fontina", prezzo: 6.00, attivo: true },
+            { id: 3, categoria: "piadine", nome: "Piadina Salame e Fontina", prezzo: 6.00, attivo: true },
+            { id: 4, categoria: "piadine", nome: "Piadina Crudo", prezzo: 6.00, attivo: true },
+            { id: 5, categoria: "piadine", nome: "Piadina Cotto", prezzo: 5.50, attivo: true },
+            { id: 6, categoria: "piadine", nome: "Piadina Salame", prezzo: 5.50, attivo: true },
+            { id: 7, categoria: "piadine", nome: "Piadina Salsiccia Cipolla e Peperoni", prezzo: 7.00, attivo: true },
+            { id: 8, categoria: "piadine", nome: "Piadina Stracchino e Rucola", prezzo: 6.00, attivo: true },
+            { id: 9, categoria: "piadine", nome: "Piadina Vuota", prezzo: 1.50, attivo: true },
+            { id: 10, categoria: "piadine", nome: "Piadina Nutella", prezzo: 3.50, attivo: true },
+            { id: 11, categoria: "panini", nome: "Hamburger di Manzo Cheddar Pomodoro Insalata Ketchup e Maionese", prezzo: 9.00, attivo: true },
+            { id: 13, categoria: "piatti", nome: "Cotoletta e Patatine Fritte", prezzo: 10.00, attivo: true },
+            { id: 14, categoria: "piatti", nome: "Patatine Fritte", prezzo: 3.50, attivo: true },
+            { id: 16, categoria: "bevande", nome: "Acqua Naturale 50cl", prezzo: 1.00, attivo: true },
+            { id: 17, categoria: "bevande", nome: "Acqua Frizzante 50cl", prezzo: 1.00, attivo: true },
+            { id: 18, categoria: "bevande", nome: "Coca Cola in lattina 33cl", prezzo: 3.00, attivo: true },
+            { id: 19, categoria: "bevande", nome: "Fanta in lattina 33cl", prezzo: 3.00, attivo: true },
+            { id: 20, categoria: "bevande", nome: "Birra Media 40cl", prezzo: 4.00, attivo: true },
+            { id: 21, categoria: "bevande", nome: "Estathè al Limone 33cl", prezzo: 3.00, attivo: true },
+            { id: 25, categoria: "caffetteria e amari", nome: "Caffè Espresso", prezzo: 1.20, attivo: true },
+            { id: 26, categoria: "caffetteria e amari", nome: "Caffè Corretto", prezzo: 1.50, attivo: true },
+            { id: 27, categoria: "caffetteria e amari", nome: "Amaro Del Capo", prezzo: 3.50, attivo: true },
+            { id: 22, categoria: "cocktail", nome: "Spritz Aperol", prezzo: 5.00, attivo: true },
+            { id: 23, categoria: "cocktail", nome: "Mojito", prezzo: 7.00, attivo: true },
+            { id: 24, categoria: "cocktail", nome: "Gin Tonic", prezzo: 7.00, attivo: true },
+            { id: 28, categoria: "cocktail", nome: "Gin Lemon", prezzo: 7.00, attivo: true },
+            { id: 29, categoria: "gelati", nome: "Maxi Cono al Cacao", prezzo: 2.50, attivo: true },
+            { id: 30, categoria: "gelati", nome: "Maxibon", prezzo: 2.50, attivo: true },
+            { id: 31, categoria: "bevande", nome: "Estathè alla Pesca 33cl", prezzo: 3.00, attivo: true },
+            { id: 32, categoria: "caffetteria e amari", nome: "Jagermeister", prezzo: 3.50, attivo: true },
+            { id: 33, categoria: "caffetteria e amari", nome: "Montenegro", prezzo: 3.50, attivo: true },
+            { id: 34, categoria: "caffetteria e amari", nome: "Jack Daniels", prezzo: 3.50, attivo: true },
+            { id: 35, categoria: "caffetteria e amari", nome: "Limoncino", prezzo: 3.50, attivo: true },
+            { id: 36, categoria: "caffetteria e amari", nome: "Nocino", prezzo: 3.50, attivo: true },
+            { id: 37, categoria: "cocktail", nome: "Spritz Campari", prezzo: 5.00, attivo: true },
+            { id: 38, categoria: "gelati", nome: "Cornetto Classico", prezzo: 2.50, attivo: true },
+            { id: 39, categoria: "gelati", nome: "Cornetto Caramello Salato", prezzo: 2.50, attivo: true },
+            { id: 12, categoria: "gelati", nome: "Sorbetto al Limone", prezzo: 2.50, attivo: true },
+            { id: 15, categoria: "gelati", nome: "Ghiacciolo", prezzo: 1.00, attivo: true },
+        ];
+
+        let elencoCategorie = [...categoriePredefinite];
+        let databaseMenu = [...menuPredefinito];
+        let storicovendite = {};
+        let archivioRicevute = [];
+        let storicoChiusure = [];
+        let contatoreRicevute = 1;
+
+        let configCategorie = {};
+        let databaseMagazzino = [];
+        let anteprimaAttiva = localStorage.getItem('st_anteprima_attiva') === 'true';
+
+        let comandaAttuale = [];
+        let idArticoloInModifica = null;
+        let idRicevutaInModifica = null;
+        let vecchioNomeCatInModifica = null;
+        let indexNotaModifica = null;
+        let categoriaSelezionataBanco = "TUTTE";
+        let termineRicercaBanco = "";
+
+        const formattaEuro = (val) => new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(val);
+
+        // ---- Utilità di sicurezza e precisione (v8) ----
+        const esc = (v) => String(v ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+        const r2 = (n) => Math.round((Number(n) + Number.EPSILON) * 100) / 100;
+        function pulisciTesto(v, max) {
+            return String(v ?? '').replace(/[\u0000-\u001F\u007F]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, max);
+        }
+        // Valida e ripulisce un ordine arrivato da rete: tutto ciò che non è atteso viene scartato
+        function validaOrdineRemoto(o) {
+            if (!o || typeof o !== 'object' || !Array.isArray(o.articoli)) return null;
+            const articoli = [];
+            for (const a of o.articoli.slice(0, 60)) {
+                if (!a) continue;
+                const id = Number(a.id);
+                const quantita = Math.floor(Number(a.quantita));
+                if (!Number.isFinite(id) || !Number.isFinite(quantita) || quantita < 1) continue;
+                articoli.push({ id, nome: pulisciTesto(a.nome, 80), prezzo: 0, quantita: Math.min(quantita, 99), variazione: pulisciTesto(a.variazione, 80) });
+            }
+            if (articoli.length === 0) return null;
+            const tavolo = pulisciTesto(o.tavolo, 40).replace(/^[=+\-@]+/, '') || 'BANCO';
+            const oid = /^[A-Za-z0-9_-]{6,40}$/.test(String(o.oid || '')) ? String(o.oid) : null;
+            return { tavolo, oid, dataEmissione: pulisciTesto(o.dataEmissione, 40), articoli };
+        }
+
+        function hexToRgba(hex, alpha) {
+            const r = parseInt(hex.slice(1, 3), 16);
+            const g = parseInt(hex.slice(3, 5), 16);
+            const b = parseInt(hex.slice(5, 7), 16);
+            return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+        }
+
+        function ottieniColoreCategoria(nomeCat) {
+            if (configCategorie[nomeCat] && configCategorie[nomeCat].color) return configCategorie[nomeCat].color;
+            const idx = elencoCategorie.indexOf(nomeCat);
+            return paletteColori[idx !== -1 ? idx % paletteColori.length : 0];
+        }
+
+        function toggleTheme() {
+            isDarkMode = !isDarkMode;
+            localStorage.setItem('st_dark_mode', isDarkMode);
+            document.body.classList.toggle('dark-mode', isDarkMode);
+            document.getElementById('theme-toggle').innerText = isDarkMode ? '☀️' : '🌙';
+            inizializzaBancoVendita();
+        }
+
+        function toggleAnteprima() {
+            anteprimaAttiva = !anteprimaAttiva;
+            localStorage.setItem('st_anteprima_attiva', anteprimaAttiva);
+            aggiornaIconaAnteprima();
+        }
+
+        function aggiornaIconaAnteprima() {
+            const btn = document.getElementById('anteprima-toggle');
+            if(anteprimaAttiva) {
+                btn.style.background = "rgba(59, 130, 246, 0.15)";
+                btn.style.color = "#3b82f6";
+                btn.style.border = "1px solid #3b82f6";
+                btn.innerHTML = "👁️";
+                btn.title = "Anteprima di Stampa: ATTIVA (Mostra la modale grafica prima di stampare)";
+            } else {
+                btn.style.background = "rgba(34, 197, 94, 0.15)";
+                btn.style.color = "#22c55e";
+                btn.style.border = "1px solid #22c55e";
+                btn.innerHTML = "🖨️⚡";
+                btn.title = "Anteprima di Stampa: DISATTIVATA (Invia direttamente alla stampante)";
+            }
+        }
+
+        function setPrintFormat(f) {
+            printFormat = f;
+            localStorage.setItem(formatPrintKey, f);
+            aggiornaInterfacciaFormatoStampa();
+        }
+
+        function aggiornaInterfacciaFormatoStampa() {
+            document.body.classList.remove('format-print-a4', 'format-print-80mm');
+            document.body.classList.add(`format-print-${printFormat.toLowerCase()}`);
+            document.getElementById('print-a4-toggle').classList.toggle('active-format', printFormat === 'A4');
+            document.getElementById('print-80mm-toggle').classList.toggle('active-format', printFormat === '80MM');
+        }
+
+        function cambiaFinestra(nome) {
+            document.querySelectorAll('.window-pane').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.btn-nav').forEach(b => b.classList.remove('active'));
+            
+            if(nome === 'CASSA') {
+                document.getElementById('pane-cassa')?.classList.add('active');
+                document.getElementById('nav-cassa')?.classList.add('active');
+            } else {
+                document.getElementById('pane-archivio')?.classList.add('active');
+                document.getElementById('nav-archivio')?.classList.add('active');
+                aggiornaSelettoreFiltroAdmin();
+                aggiornaTabellaReportEListino();
+                aggiornaElencoCategorieAdmin();
+                aggiornaTabellaMagazzino();
+                mostraArchivioRicevute();
+                mostraStoricoChiusure();
+                aggiornaGrafici();
+            }
+        }
+
+        function switchMobileCassaView(v) {
+            const p = document.getElementById('pane-cassa');
+            const bm = document.getElementById('mb-btn-menu');
+            const bc = document.getElementById('mb-btn-comanda');
+            if(v === 'menu') {
+                p?.classList.remove('mobile-view-comanda');
+                bm?.classList.add('active'); bc?.classList.remove('active');
+            } else {
+                p?.classList.add('mobile-view-comanda');
+                bc?.classList.add('active'); bm?.classList.remove('active');
+            }
+        }
+
+        function disegnaTabsCategoriaBanco() {
+            const cont = document.getElementById('contenitore-tabs-banco');
+            if(!cont) return;
+            cont.innerHTML = '';
+            const btnTutte = document.createElement('button');
+            btnTutte.className = `tab-filtro ${categoriaSelezionataBanco === 'TUTTE' ? 'active' : ''}`;
+            btnTutte.innerText = "📁 Tutto";
+            btnTutte.onclick = () => {
+                categoriaSelezionataBanco = "TUTTE";
+                disegnaTabsCategoriaBanco();
+                inizializzaBancoVendita();
+            };
+            cont.appendChild(btnTutte);
+
+            elencoCategorie.forEach(cat => {
+                const btn = document.createElement('button');
+                btn.className = `tab-filtro ${categoriaSelezionataBanco === cat ? 'active' : ''}`;
+                btn.innerHTML = `${esc(getEmojiPerCategoria(cat))} ${esc(cat.charAt(0).toUpperCase() + cat.slice(1))}`;
+                btn.onclick = () => {
+                    categoriaSelezionataBanco = cat;
+                    disegnaTabsCategoriaBanco();
+                    inizializzaBancoVendita();
+                };
+                cont.appendChild(btn);
+            });
+        }
+
+        async function forzaResetCategorieNuove() {
+    if (confirm("ATTENZIONE! Questa operazione eseguirà un RESET DI FABBRICA.\n\nCancellerà permanentemente TUTTI i dati inseriti: menu personalizzato, modifiche ai prezzi, magazzino, statistiche e TUTTO lo storico degli scontrini emessi.\n\nL'applicazione tornerà esattamente allo stato iniziale di fabbrica (foglio vuoto all'origine). Vuoi procedere?")) {
+        if (confirm("Sei ASSOLUTAMENTE sicuro? Questa azione eliminerà e distruggerà ogni dato memorizzato nel browser senza possibilità di recupero.")) {
+            try {
+                // 1. Svuota completamente l'intero database localforage (IndexedDB)
+                await localforage.clear();
+                
+                // 2. Svuota anche il localStorage tradizionale del browser
+                localStorage.clear();
+                
+                // 3. Disinstalla i Service Worker e svuota le loro cache (causa del mancato refresh automatico)
+                if ('serviceWorker' in navigator) {
+                    const registrations = await navigator.serviceWorker.getRegistrations();
+                    for(let registration of registrations) {
+                        await registration.unregister();
+                    }
+                }
+                
+                // Pulisce anche le cache fisiche dei file per evitare il recupero dei vecchi dati
+                if ('caches' in window) {
+                    const cacheNames = await caches.keys();
+                    for (let name of cacheNames) {
+                        await caches.delete(name);
+                    }
+                }
+                
+                alert("Reset di fabbrica completato con successo. L'applicazione verrà ricaricata.");
+                
+                // 4. FORZA IL REFRESH AUTOMATICO SENZA BISOGNO DI PREMERE F5
+                // Cambiamo l'URL inserendo un parametro unico e poi forziamo il reload hardware
+                window.location.hash = "reset-" + Date.now();
+                window.location.reload();
+                
+            } catch (err) {
+                console.error("Errore durante il reset di fabbrica:", err);
+                alert("Si è verificato un errore durante la cancellazione dei dati: " + err);
+            }
+        }
+    }
+}
+
+        function impostaFiltroRicerca(testo) {
+            termineRicercaBanco = testo.toLowerCase().trim();
+            inizializzaBancoVendita();
+        }
+
+        function inizializzaBancoVendita() {
+            const container = document.getElementById('contenitore-banco-categorie');
+            if(!container) return;
+            container.innerHTML = '';
+            const prodottiPerCategoria = {};
+            elencoCategorie.forEach(cat => prodottiPerCategoria[cat] = []);
+            
+            databaseMenu.forEach(p => {
+                if (p.attivo !== false) {
+                    let c = elencoCategorie.includes(p.categoria) ? p.categoria : "Varie";
+                    if (!prodottiPerCategoria[c]) prodottiPerCategoria[c] = [];
+                    if ((categoriaSelezionataBanco === "TUTTE" || p.categoria === categoriaSelezionataBanco) && p.nome.toLowerCase().includes(termineRicercaBanco)) {
+                        prodottiPerCategoria[c].push(p);
+                    }
+                }
+            });
+
+            Object.keys(prodottiPerCategoria).forEach(cat => {
+                const lista = prodottiPerCategoria[cat];
+                if(lista.length === 0) return;
+                const col = ottieniColoreCategoria(cat);
+                const bgMorbido = isDarkMode ? hexToRgba(col, 0.1) : hexToRgba(col, 0.04);
+                
+                const boxCat = document.createElement('div');
+                boxCat.className = "sezione-blocco";
+                boxCat.style.backgroundColor = bgMorbido;
+                boxCat.style.borderColor = hexToRgba(col, 0.25);
+                
+                const t = document.createElement('h2');
+                t.className = "titolo-sezione";
+                t.style.color = col;
+                t.style.borderBottom = `2px solid ${hexToRgba(col,0.15)}`;
+                t.style.paddingBottom = "6px";
+                t.innerHTML = `<span>${esc(getEmojiPerCategoria(cat))} ${esc(cat.toUpperCase())}</span><small style="font-weight:600; opacity:0.7;">${lista.length} voci</small>`;
+                boxCat.appendChild(t);
+                
+                const grid = document.createElement('div');
+                grid.className = "grid-prodotti";
+                
+                lista.forEach(p => {
+                    const card = document.createElement('div');
+                    card.className = "card-prodotto";
+                    card.style.borderLeft = `4px solid ${col}`;
+                    
+                    const mMag = databaseMagazzino.find(m => p.nome.toLowerCase().includes(m.parolaChiave.toLowerCase()));
+                    let badgeMagazzinoHtml = '';
+                    if(mMag) {
+                        const esaurito = mMag.qta <= 0;
+                        badgeMagazzinoHtml = `<span style="position:absolute; top:6px; right:6px; font-size:0.65rem; font-weight:700; padding:2px 5px; border-radius:4px; ${esaurito ? 'background:var(--danger-dim); color:var(--danger);' : 'background:var(--success-dim); color:var(--success);'}">Scorta: ${mMag.qta}</span>`;
+                    }
+                    
+                    card.innerHTML = `
+                        ${badgeMagazzinoHtml}
+                        <span class="card-icon">${getEmojiPerCategoria(p.categoria)}</span>
+                        <div class="nome-prodotto">${esc(p.nome)}</div>
+                        <div class="prezzo-prodotto">${formattaEuro(p.prezzo)}</div>
+                    `;
+                    card.onclick = () => aggiungiArticoloInComanda(p.id);
+                    grid.appendChild(card);
+                });
+                
+                boxCat.appendChild(grid);
+                container.appendChild(boxCat);
+            });
+        }
+
+        document.getElementById('ricerca-banco')?.addEventListener('keydown', (e) => {
+            if(e.key === 'Enter') {
+                const testo = e.target.value.toLowerCase().trim();
+                if(!testo) return;
+                const trovato = databaseMenu.find(p => p.attivo !== false && p.nome.toLowerCase().includes(testo));
+                if(trovato) {
+                    aggiungiArticoloInComanda(trovato.id);
+                    e.target.value = '';
+                    termineRicercaBanco = '';
+                    inizializzaBancoVendita();
+                } else {
+                    showToast("Nessun articolo trovato con questa ricerca rapida.", "error");
+                }
+            }
+        });
+
+        function cambiaQuantitaItem(idx, variaz) {
+    if(!comandaAttuale[idx]) return;
+    comandaAttuale[idx].quantita += variaz;
+    if(comandaAttuale[idx].quantita <= 0) {
+        comandaAttuale.splice(idx, 1);
+    }
+    aggiornaInterfacciaComanda();
+}
+
+// Questa funzione ora gestisce correttamente la classe modal-overlay del tuo file
+function apriModalNota(idx) {
+    if(!comandaAttuale[idx]) return;
+    indexNotaModifica = idx;
+    
+    // Nel file l'input ha ID 'input-modal-nota'
+    const inputNota = document.getElementById('input-modal-nota');
+    // Nel file la modale principale ha ID 'modal-nota' ed usa la classe 'modal-overlay'
+    const modalNota = document.getElementById('modal-nota');
+    
+    if (modalNota) {
+        if (inputNota) {
+            inputNota.value = comandaAttuale[idx].variazione || '';
+        }
+        // Il tuo CSS usa .modal-overlay.active { display: flex; opacity: 1; }
+        modalNota.classList.add('active');
+        modalNota.style.display = 'flex'; // Forza l'apertura visiva immediata
+        
+        if (inputNota) {
+            setTimeout(() => inputNota.focus(), 150);
+        }
+    }
+}
+// La colleghiamo a window per i pulsanti dinamici generati via stringa HTML
+window.apriModalNota = apriModalNota;
+
+function chiudiModalNota() { 
+    const modalNota = document.getElementById('modal-nota');
+    if (modalNota) {
+        modalNota.classList.remove('active'); 
+        modalNota.style.display = 'none'; // Nasconde la modale
+    }
+    indexNotaModifica = null; 
+}
+window.chiudiModalNota = chiudiModalNota;
+
+function salvaModalNota() {
+    if(indexNotaModifica !== null && comandaAttuale[indexNotaModifica]) {
+        const inputNota = document.getElementById('input-modal-nota');
+        if (inputNota) {
+            comandaAttuale[indexNotaModifica].variazione = inputNota.value.trim();
+        }
+        aggiornaInterfacciaComanda();
+    }
+    chiudiModalNota();
+}
+window.salvaModalNota = salvaModalNota;
+
+        function calcolaValoriComanda() {
+            const lordo = r2(comandaAttuale.reduce((tot, i) => tot + r2(i.prezzo * i.quantita), 0));
+            const tipoSconto = document.getElementById('tipo-sconto').value;
+            const valScontoInp = Math.max(0, parseFloat(document.getElementById('valore-sconto').value) || 0);
+            
+            let detrazione = 0;
+            if(tipoSconto === "PERCENTUALE") {
+                detrazione = r2(lordo * (Math.min(valScontoInp, 100) / 100));
+            } else {
+                detrazione = valScontoInp;
+            }
+            
+            if(detrazione > lordo) detrazione = lordo;
+            const finalDaPagare = r2(Math.max(0, lordo - detrazione));
+            
+            return { lordo, detrazione, finalDaPagare };
+        }
+
+        function aggiornaInterfacciaComanda() {
+            const corpo = document.getElementById('corpo-comanda');
+            if(!corpo) return;
+            corpo.innerHTML = '';
+            
+            const calc = calcolaValoriComanda();
+            
+            if(comandaAttuale.length === 0) {
+                corpo.innerHTML = `<div class="comanda-vuota-stato"><span style="font-size:2rem;">🛒</span><div>Comanda Vuota</div></div>`;
+                document.getElementById('riga-subtotale-box').style.display = "none";
+                document.getElementById('riga-valore-sconto-box').style.display = "none";
+            } else {
+                comandaAttuale.forEach((item, idx) => {
+                    const li = document.createElement('li');
+                    li.className = 'item-comanda';
+                    li.innerHTML = `
+                        <div class="item-riga-alta">
+                            <div class="info-articolo-nome"><strong>${item.quantita}x</strong> ${esc(item.nome)}</div>
+                            <div style="display:flex; align-items:center; gap:0.6rem;">
+                                <span style="font-weight:700; font-size:0.9rem;">${formattaEuro(item.prezzo * item.quantita)}</span>
+                                <div class="controlli-qta">
+                                    <button class="btn-modifica" onclick="cambiaQuantitaItem(${idx}, -1)">-</button>
+                                    <button class="btn-modifica" onclick="cambiaQuantitaItem(${idx}, 1)">+</button>
+                                    <button class="btn-modifica" style="background:#ef4444; color:white; border-color:#ef4444; margin-left:2px;" onclick="event.stopPropagation(); if(confirm('Vuoi rimuovere interamente questo articolo dalla comanda attuale?')) { comandaAttuale.splice(${idx}, 1); salvaDatiLocali(); aggiornaInterfacciaComanda(); }">🗑️</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="nota-variazione" onclick="apriModalNota(${idx})">${item.variazione ? `✏️ ${esc(item.variazione)}` : "+ Aggiungi Nota"}</div>
+                    `;
+                    corpo.appendChild(li);
+                });
+                
+                if(calc.detrazione > 0) {
+                    document.getElementById('riga-subtotale-box').style.display = "flex";
+                    document.getElementById('subtotale-comanda').innerText = formattaEuro(calc.lordo);
+                    document.getElementById('riga-valore-sconto-box').style.display = "flex";
+                    document.getElementById('esito-sconto-comanda').innerText = "-" + formattaEuro(calc.detrazione);
+                } else {
+                    document.getElementById('riga-subtotale-box').style.display = "none";
+                    document.getElementById('riga-valore-sconto-box').style.display = "none";
+                }
+            }
+            
+            document.getElementById('totale-comanda').innerText = formattaEuro(calc.finalDaPagare);
+            const mbBadge = document.getElementById('mb-totale-badge');
+            if (mbBadge) mbBadge.innerText = formattaEuro(calc.finalDaPagare);
+            
+            const bloccato = comandaAttuale.length === 0;
+            ['btn-azione-ricevuta', 'btn-azione-cucina', 'btn-azione-bar', 'btn-azione-contanti', 'btn-azione-pos', 'btn-azione-svuota', 'btn-azione-parcheggia'].forEach(id => {
+                const btn = document.getElementById(id);
+                if (btn) btn.disabled = bloccato;
+            });
+        }
+
+        // Se la modifica di uno scontrino viene annullata, lo scontrino originale torna a contare nei totali e nel magazzino
+        function ripristinaRicevutaNonModificata() {
+            const orig = archivioRicevute.find(r => r.id === idRicevutaInModifica);
+            if (!orig) return;
+            orig.articoli.forEach(item => {
+                const prodMenu = databaseMenu.find(m => m.id === item.id) || {};
+                if (!storicovendite[item.nome]) storicovendite[item.nome] = { qta: 0, incasso: 0, categoria: prodMenu.categoria || "Varie" };
+                storicovendite[item.nome].qta += item.quantita;
+                storicovendite[item.nome].incasso = r2(storicovendite[item.nome].incasso + item.prezzo * item.quantita);
+                databaseMagazzino.forEach(m => {
+                    if (!m.parolaChiave || !String(m.parolaChiave).trim()) return;
+                    if (item.nome.toLowerCase().includes(String(m.parolaChiave).trim().toLowerCase())) m.qta -= item.quantita;
+                });
+            });
+            salvaDatiLocali();
+            if (typeof aggiornaTabellaMagazzino === 'function') aggiornaTabellaMagazzino();
+        }
+
+        function svuotaComanda(mantieniIntestazione = false) {
+            if (idRicevutaInModifica !== null) {
+                ripristinaRicevutaNonModificata();
+                showToast("Modifica annullata: lo scontrino originale è stato ripristinato.", "warning");
+            }
+            comandaAttuale = [];
+            const elTavolo = document.getElementById('num-tavolo');
+            if(elTavolo) elTavolo.value = '';
+            
+            // La ragione sociale / intestazione viene protetta e preservata stabilmente contro i reset di metà serata
+            // Si cancella solo se l'operatore pulisce manualmente la casella di testo dell'input
+            const elIntest = document.getElementById('intestazione-ricevuta');
+            if (elIntest) {
+                localforage.getItem('st_intestazione_fissa_v7').then(saved => {
+                    if (saved) elIntest.value = saved;
+                });
+            }
+            const elSconto = document.getElementById('valore-sconto');
+            if(elSconto) elSconto.value = '0';
+            
+            idRicevutaInModifica = null;
+            aggiornaInterfacciaComanda();
+            if (window.innerWidth <= 1024) switchMobileCassaView('menu');
+            if (!mantieniIntestazione) {
+                showToast("Comanda annullata.");
+            }
+        }
+
+        function apriModalResto() {
+            const calc = calcolaValoriComanda();
+            document.getElementById('resto-modal-totale').innerText = formattaEuro(calc.finalDaPagare);
+            document.getElementById('input-contante').value = '';
+            document.getElementById('testo-resto-calcolato').innerText = formattaEuro(0);
+            document.getElementById('testo-resto-calcolato').style.color = "var(--text-light)";
+            document.getElementById('btn-conferma-resto').disabled = false;
+            document.getElementById('modal-resto').classList.add('active');
+            setTimeout(() => document.getElementById('input-contante').focus(), 150);
+        }
+        function chiudiModalResto() { document.getElementById('modal-resto').classList.remove('active'); }
+        
+        function calcolaRestoIstantaneo() {
+            const calc = calcolaValoriComanda();
+            const inc = parseFloat(document.getElementById('input-contante').value) || 0;
+            const diff = inc - calc.finalDaPagare;
+            const el = document.getElementById('testo-resto-calcolato');
+            
+            if(inc === 0) {
+                el.innerText = formattaEuro(0);
+                el.style.color = "var(--text-light)";
+                document.getElementById('btn-conferma-resto').disabled = false;
+            } else if(diff < 0) {
+                el.innerText = "Contante Insufficiente";
+                el.style.color = "var(--danger)";
+                document.getElementById('btn-conferma-resto').disabled = true;
+            } else {
+                el.innerText = formattaEuro(diff);
+                el.style.color = "var(--success)";
+                document.getElementById('btn-conferma-resto').disabled = false;
+            }
+        }
+
+        function confermaPagamentoContanti() {
+            chiudiModalResto();
+            chiudiEArchiviaOrdine('CONTANTI');
+        }
+
+        function chiudiEArchiviaOrdine(metodo) {
+            if(comandaAttuale.length === 0) return;
+            const tavolo = document.getElementById('num-tavolo')?.value.trim() || '';
+            const intestazione = document.getElementById('intestazione-ricevuta')?.value.trim() || '';
+            const calc = calcolaValoriComanda();
+            
+            comandaAttuale.forEach(item => {
+                const prodMenu = databaseMenu.find(m => m.id === item.id) || {};
+                if(!storicovendite[item.nome]) {
+                    storicovendite[item.nome] = { qta: 0, incasso: 0, categoria: prodMenu.categoria || "Varie" };
+                }
+                storicovendite[item.nome].qta += item.quantita;
+                storicovendite[item.nome].incasso = r2(storicovendite[item.nome].incasso + item.prezzo * item.quantita);
+            });
+
+            scaricaMagazzinoDallaComanda();
+
+            if (idRicevutaInModifica !== null) {
+                const idx = archivioRicevute.findIndex(r => r.id === idRicevutaInModifica);
+                if (idx !== -1) {
+                    archivioRicevute[idx] = {
+                        id: idRicevutaInModifica, tavolo, intestazione, totale: calc.finalDaPagare, subTotale: calc.lordo, sconto: calc.detrazione, metodo,
+                        data: new Date().toISOString(), articoli: JSON.parse(JSON.stringify(comandaAttuale))
+                    };
+                    showToast(`Scontrino #${idRicevutaInModifica} modificato e salvato.`, "success");
+                }
+            } else {
+                const ricevuta = {
+                    id: contatoreRicevute++, tavolo, intestazione, totale: calc.finalDaPagare, subTotale: calc.lordo, sconto: calc.detrazione, metodo,
+                    data: new Date().toISOString(), articoli: JSON.parse(JSON.stringify(comandaAttuale))
+                };
+                archivioRicevute.unshift(ricevuta);
+                showToast(`Incassato ${formattaEuro(calc.finalDaPagare)} con ${metodo}.`, "success");
+            }
+            
+            salvaDatiLocali();
+            idRicevutaInModifica = null;
+            svuotaComanda(true);
+            inizializzaBancoVendita();
+        }
+
+        // ============================================
+        // RIPRISTINO MAGAZZINO E MODIFICA SCONTRINI
+        // ============================================
+        function reintegraMagazzinoDaArticoli(articoli) {
+            articoli.forEach(item => {
+                const nomeArticoloLower = item.nome.toLowerCase();
+                const qtaVenduta = item.quantita;
+                databaseMagazzino.forEach(m => {
+                    if (!m.parolaChiave || !String(m.parolaChiave).trim()) return;
+                    const parolaLower = String(m.parolaChiave).trim().toLowerCase();
+                    if(nomeArticoloLower.includes(parolaLower)) {
+                        m.qta += qtaVenduta; // Ri-aggiungo la scorta tolta in precedenza
+                    }
+                });
+            });
+            salvaDatiLocali();
+            aggiornaTabellaMagazzino();
+        }
+
+        function richiamaRicevuta(id) {
+            if (comandaAttuale.length > 0) {
+                showToast("Svuota la comanda attuale prima di richiamare uno scontrino!", "error");
+                return;
+            }
+            const idx = archivioRicevute.findIndex(r => r.id === id);
+            if (idx === -1) return;
+            const ricevuta = archivioRicevute[idx];
+            
+            // Ripristina Statistiche
+            ricevuta.articoli.forEach(item => {
+                if (storicovendite[item.nome]) {
+                    storicovendite[item.nome].qta -= item.quantita;
+                    storicovendite[item.nome].incasso -= (item.prezzo * item.quantita);
+                    if (storicovendite[item.nome].qta <= 0) delete storicovendite[item.nome];
+                }
+            });
+            
+            // RIPRISTINA MAGAZZINO
+            reintegraMagazzinoDaArticoli(ricevuta.articoli);
+            
+            comandaAttuale = JSON.parse(JSON.stringify(ricevuta.articoli));
+            document.getElementById('num-tavolo').value = ricevuta.tavolo || '';
+            document.getElementById('intestazione-ricevuta').value = ricevuta.intestazione || '';
+            document.getElementById('valore-sconto').value = ricevuta.sconto || 0;
+            document.getElementById('tipo-sconto').value = "FISSO";
+            
+            idRicevutaInModifica = id;
+            salvaDatiLocali();
+            mostraArchivioRicevute();
+            aggiornaTabellaReportEListino();
+            aggiornaGrafici();
+            cambiaFinestra('CASSA');
+            if (window.innerWidth <= 1024) switchMobileCassaView('comanda');
+            aggiornaInterfacciaComanda();
+            inizializzaBancoVendita();
+            showToast(`Scontrino #${id} caricato in modifica. Scorte e sconti ripristinati.`, "warning");
+        }
+
+        function eliminaRicevuta(id) {
+            if(confirm(`Sei sicuro di voler eliminare lo scontrino #${id}? Verrà rimosso dai totali.`)) {
+                const idx = archivioRicevute.findIndex(r => r.id === id);
+                if(idx !== -1) {
+                    const r = archivioRicevute[idx];
+                    
+                    // Ripristina Statistiche
+                    r.articoli.forEach(item => {
+                        if (storicovendite[item.nome]) {
+                            storicovendite[item.nome].qta -= item.quantita;
+                            storicovendite[item.nome].incasso -= (item.prezzo * item.quantita);
+                            if (storicovendite[item.nome].qta <= 0) delete storicovendite[item.nome];
+                        }
+                    });
+                    
+                    // RIPRISTINA MAGAZZINO
+                    reintegraMagazzinoDaArticoli(r.articoli);
+
+                    archivioRicevute.splice(idx, 1);
+                salvaDatiLocali();
+                mostraArchivioRicevute();
+                aggiornaTabellaReportEListino();
+                aggiornaGrafici();
+                inizializzaBancoVendita(); // <--- RIGA AGGIUNTA CHE RISOLVE IL PROBLEMA
+                showToast("Scontrino eliminato e scorte ripristinate.");
+            }
+        }
+    }
+        
+        // ============================================
+        // FUNZIONE "PARCHEGGIA" LACOMANDA
+        // ============================================
+        function riparcheggiaComanda() {
+            if (comandaAttuale.length === 0) return;
+            if (idRicevutaInModifica !== null) {
+                showToast("Stai modificando uno scontrino: chiudilo o annullalo prima di parcheggiare.", "error");
+                return;
+            }
+            const tavolo = document.getElementById('num-tavolo').value.trim() || 'In Attesa (Cassa)';
+            
+            const comandaDaParcheggiare = {
+                tavolo: tavolo,
+                articoli: JSON.parse(JSON.stringify(comandaAttuale))
+            };
+            
+            comandeRemoteInAttesa.push(comandaDaParcheggiare);
+            aggiornaBarraNotifichePalmari();
+            svuotaComanda(true); // svuota ma mantiene intestazione fissa
+            showToast("Comanda parcheggiata in attesa.", "warning");
+        }
+
+        function ristampaRicevutaArchiviata(id) {
+            const r = archivioRicevute.find(x => x.id === id);
+            if(!r) return;
+            const blocco = document.getElementById('blocco-stampa');
+            let html = '';
+            if(r.intestazione) {
+                html += `<div style="text-align:center; font-weight:800; font-size:12pt; margin-bottom:4px;">${esc(r.intestazione.toUpperCase())}</div>`;
+            }
+            html += `<div class="stampa-titolo">COPIA RICEVUTA</div>`;
+            html += `<div class="stampa-subtitolo">Ristampa Scontrino #${r.id}</div>`;
+            html += `<div style="margin-bottom: 12px; font-size: 10pt;">${r.tavolo ? `<b>TAVOLO/CLIENTE:</b> ${esc(r.tavolo)}<br>` : ''}<b>Data:</b> ${new Date(r.data).toLocaleString('it-IT')}</div>`;
+            html += `<table class="stampa-tabella">`;
+            r.articoli.forEach(i => {
+                html += `<tr><td><b>${i.quantita}x</b> ${esc(i.nome)}${i.variazione ? `<br><small style="margin-left:8px;">* ${esc(i.variazione)}</small>` : ''}</td><td style="text-align:right; vertical-align:top;">${formattaEuro(i.prezzo * i.quantita)}</td></tr>`;
+            });
+            html += `</table>`;
+            
+            if(r.sconto && r.sconto > 0) {
+                html += `<div style="text-align:right; font-size: 10pt; margin-top:8px; color:#000;">Subtotale: ${formattaEuro(r.subTotale || r.totale + r.sconto)}</div>`;
+                html += `<div style="text-align:right; font-size: 10pt; color:#000;">Sconto: -${formattaEuro(r.sconto)}</div>`;
+            }
+            html += `<div class="stampa-totale">TOTALE PAGATO: ${formattaEuro(r.totale)}</div>`;
+            html += `<div style="text-align:right; font-size: 9pt; margin-top:4px;">Metodo: ${esc(r.metodo)}</div>`;
+            blocco.innerHTML = html;
+            gestisciStampaOAnteprima();
+        }
+
+        function gestisciStampaOAnteprima() {
+            if(anteprimaAttiva) {
+                document.getElementById('anteprima-stampa-corpo').innerHTML = document.getElementById('blocco-stampa').innerHTML;
+                document.getElementById('modal-anteprima').classList.add('active');
+            } else {
+                confermaStampaFisica();
+            }
+        }
+        function chiudiModalAnteprima() { document.getElementById('modal-anteprima').classList.remove('active'); }
+        function confermaStampaFisica() {
+            chiudiModalAnteprima();
+            window.print();
+        }
+
+        function mostraStoricoChiusure() {
+            const c = document.getElementById('lista-chiusure-storico');
+            if(!c) return;
+            c.innerHTML = '';
+            if(storicoChiusure.length === 0) {
+                c.innerHTML = '<p style="font-size:0.85rem; color:var(--text-muted); padding:1rem;">Nessuna chiusura presente in archivio.</p>';
+                return;
+            }
+            storicoChiusure.forEach((z, idx) => {
+                const d = document.createElement('div');
+                d.className = 'ricevuta-card-item';
+                d.onclick = () => d.classList.toggle('expanded');
+                d.innerHTML = `
+                    <div style="display:flex;justify-content:space-between; align-items:center; font-weight:700;">
+                        <span>Chiusura Serale Z del ${new Date(z.data).toLocaleDateString()} ad ore ${new Date(z.data).toLocaleTimeString('it-IT', {hour: '2-digit', minute:'2-digit'})}</span>
+                        <div style="display:flex; align-items:center; gap:10px;">
+                            <button class="btn-mini-azione" onclick="esportaSingolaChiusuraCSV(event, ${idx})" style="font-weight:700; background: var(--primary-dim); color: var(--primary); border: 1px solid var(--primary); padding: 3px 8px; border-radius: 6px; font-size: 0.75rem; cursor: pointer; transition: all 0.2s;">📊 Scarica CSV</button>
+                            <span style="color:var(--success); font-size: 1rem;">${formattaEuro(z.totale)}</span>
+                        </div>
+                    </div>
+                    <div class="ricevuta-dettaglio" style="font-family:monospace; white-space:pre-wrap; margin-top: 8px;">${z.dettaglioText}</div>
+                `;
+                c.appendChild(d);
+            });
+        }
+
+        function esportaSingolaChiusuraCSV(e, idx) {
+    if(e) e.stopPropagation();
+    const z = storicoChiusure[idx];
+    if(!z) return;
+    
+    let csv = "=== CHIUSURA SERALE Z ===\n";
+    csv += `Data Chiusura;${new Date(z.data).toLocaleString('it-IT')}\n\n`;
+    
+    // METODO NUOVO: Esportazione sicura dai dati strutturati
+    if (z.vendite && z.vendite.length > 0) {
+        csv += "=== VENDITE ARTICOLI ===\n";
+        csv += "Articolo;Quantita Venduta;Incasso Totale (€)\n";
+        
+        z.vendite.forEach(v => {
+            csv += `"${v.nome}";${v.qta};"${v.incasso.toFixed(2).replace('.', ',')}"\n`;
+        });
+        
+        csv += "\n=== RIEPILOGO FINANZIARIO ===\n";
+        csv += `"Pezzi totali";"${z.totPezzi || 0}"\n`;
+        csv += `"Totale Contanti";"${(z.contanti || 0).toFixed(2).replace('.', ',')}"\n`;
+        csv += `"Totale POS";"${(z.pos || 0).toFixed(2).replace('.', ',')}"\n`;
+        csv += `"INCASSO COMPLESSIVO";"${(z.totale || 0).toFixed(2).replace('.', ',')}"\n`;
+    } 
+    // METODO VECCHIO: Fallback per le vecchie chiusure salvate
+    else {
+        csv += "Dato;Valore\n";
+        const lines = z.dettaglioText.split('\n');
+        let inArticoli = false;
+        
+        lines.forEach(l => {
+            l = l.trim();
+            if(!l || l.startsWith('===') || l.startsWith('---') || l.startsWith('Data/Ora:')) return;
+            
+            if(l.includes('x ') && l.includes(' -> ')) {
+                if(!inArticoli) {
+                    csv += "\n=== VENDITE ARTICOLI ===\n";
+                    csv += "Articolo;Quantita Venduta;Incasso Totale (€)\n";
+                    inArticoli = true;
+                }
+                const parts = l.split('x ');
+                const qta = parts[0].trim();
+                const rest = parts.slice(1).join('x ');
+                const subParts = rest.split(' -> ');
+                // Resa sicura per i vecchi salvataggi: prende sempre l'ultimo elemento come prezzo
+                const nome = subParts.slice(0, -1).join(' -> ').trim(); 
+                const incasso = subParts[subParts.length - 1].replace('€', '').trim().replace('.', ',');
+                csv += `"${nome}";${qta};"${incasso}"\n`;
+            } else {
+                if(inArticoli) {
+                    csv += "\n=== RIEPILOGO FINANZIARIO ===\n";
+                    inArticoli = false;
+                }
+                if(l.includes(':')) {
+                    const idxCol = l.indexOf(':');
+                    const chiave = l.substring(0, idxCol).trim();
+                    let valore = l.substring(idxCol+1).replace('€', '').trim().replace('.', ',');
+                    csv += `"${chiave}";"${valore}"\n`;
+                } else {
+                    csv += `"${l}";""\n`;
+                }
+            }
+        });
+    }
+    
+    const bom = "\uFEFF";
+    const blob = new Blob([bom + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `Chiusura_Z_${new Date(z.data).toISOString().split('T')[0]}_ore_${new Date(z.data).getHours()}-${new Date(z.data).getMinutes()}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast("CSV Chiusura scaricato.");
+}
+
+        function apriModalAzzera() { document.getElementById('modal-azzera').classList.add('active'); }
+        function chiudiModalAzzera() { document.getElementById('modal-azzera').classList.remove('active'); }
+        
+        function azzeraTuttoIlSistema() {
+    let totQ = 0; let totI = 0;
+    let cContanti = 0; let cPos = 0;
+    
+    archivioRicevute.forEach(r => {
+        totI += r.totale;
+        if(r.metodo === 'CONTANTI') cContanti += r.totale;
+        else cPos += r.totale;
+    });
+
+    let txt = `=== DETTAGLIO CHIUSURA Z ===\n`;
+    txt += `Data/Ora: ${new Date().toLocaleString()}\n`;
+    txt += `----------------------------\n`;
+    
+    // Prepariamo i dati strutturati per un'esportazione sicura
+    const venditeStrutturate = [];
+
+    Object.entries(storicovendite).forEach(([n, d]) => {
+        txt += `${d.qta}x ${n} -> ${formattaEuro(d.incasso)}\n`;
+        totQ += d.qta;
+        // Salviamo l'oggetto reale per il CSV
+        venditeStrutturate.push({ nome: n, qta: d.qta, incasso: d.incasso });
+    });
+    txt += `----------------------------\n`;
+    txt += `Pezzi totali: ${totQ}\n`;
+    txt += `Totale Contanti: ${formattaEuro(cContanti)}\n`;
+    txt += `Totale POS: ${formattaEuro(cPos)}\n`;
+    txt += `INCASSO COMPLESSIVO (AL NETTO SCONTI): ${formattaEuro(totI)}\n============================`;
+
+    // Aggiungiamo i dati strutturati al salvataggio storico
+    storicoChiusure.unshift({ 
+        data: new Date().toISOString(), 
+        totale: totI, 
+        dettaglioText: txt,
+        contanti: cContanti,
+        pos: cPos,
+        totPezzi: totQ,
+        vendite: venditeStrutturate
+    });
+    
+    storicovendite = {}; 
+    archivioRicevute = [];
+    contatoreRicevute = 1;
+    
+    salvaDatiLocali();
+    chiudiModalAzzera();
+    cambiaFinestra('ARCHIVIO');
+    aggiornaTabellaReportEListino();
+    aggiornaGrafici();
+    showToast("Giornata Chiusa. Cassa azzerata.");
+}
+
+        function apriModalAzzeraStorico() { document.getElementById('modal-azzera-storico').classList.add('active'); }
+        function chiudiModalAzzeraStorico() { document.getElementById('modal-azzera-storico').classList.remove('active'); }
+        function azzeraStoricoChiusure() {
+            storicoChiusure = [];
+            salvaDatiLocali();
+            chiudiModalAzzeraStorico();
+            mostraStoricoChiusure();
+            showToast("Storico cancellato.");
+        }
+
+        function esportaBackupCompletoJSON() {
+            const backup = {
+                categorie: elencoCategorie, menu: databaseMenu, vendite: storicovendite,
+                ricevute: archivioRicevute, chiusure: storicoChiusure, contatore: contatoreRicevute,
+                configCat: configCategorie, magazzino: databaseMagazzino
+            };
+            const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Backup_SmartCassa_${new Date().toISOString().split('T')[0]}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            showToast("Backup scaricato.");
+        }
+
+        function importaBackupCompletoJSON(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const res = JSON.parse(e.target.result);
+                    const menuValido = Array.isArray(res.menu) && res.menu.every(p => p && Number.isFinite(Number(p.id)) && typeof p.nome === 'string' && typeof p.categoria === 'string' && Number.isFinite(Number(p.prezzo)) && Number(p.prezzo) >= 0);
+                    if(Array.isArray(res.categorie) && res.categorie.every(c => typeof c === 'string') && menuValido) {
+                        if (!confirm("L'importazione SOSTITUISCE tutti i dati attuali (listino, scontrini, chiusure, magazzino).\n\nTi consiglio di esportare prima un backup. Continuare?")) return;
+                        elencoCategorie = res.categorie;
+                        databaseMenu = res.menu;
+                        storicovendite = res.vendite || {};
+                        archivioRicevute = res.ricevute || [];
+                        storicoChiusure = res.chiusure || res.chiusures || []; 
+                        contatoreRicevute = Math.max(Number(res.contatore) || 1, ...(Array.isArray(res.ricevute) ? res.ricevute.map(r => Number(r.id) + 1 || 1) : [1]));
+                        configCategorie = res.configCat || {};
+                        databaseMagazzino = res.magazzino || [];
+                        
+                        salvaDatiLocali();
+                        disegnaTabsCategoriaBanco();
+                        inizializzaBancoVendita();
+                        
+                        if(document.getElementById('pane-archivio')?.classList.contains('active')) {
+                            aggiornaSelettoreFiltroAdmin();
+                            aggiornaTabellaReportEListino();
+                            aggiornaElencoCategorieAdmin();
+                            aggiornaTabellaMagazzino();
+                            mostraArchivioRicevute();
+                            mostraStoricoChiusure();
+                            aggiornaGrafici();
+                        }
+                        showToast("Dati e configurazione importati correttamente.", "success");
+                    } else {
+                        showToast("File di backup non valido.", "error");
+                    }
+                } catch(err) {
+                    showToast("Errore lettura file.", "error");
+                }
+            };
+            reader.readAsText(file);
+            event.target.value = '';
+        }
+
+        function aggiornaGrafici() {
+            const righe = Object.entries(storicovendite).map(([n, d]) => ({nome: n, qta: d.qta}));
+            righe.sort((a, b) => b.qta - a.qta);
+            const top5 = righe.slice(0, 5);
+            
+            let htmlTop = '';
+            let maxQ = top5.length > 0 ? top5[0].qta : 1;
+            top5.forEach(r => {
+                let perc = (r.qta / maxQ) * 100;
+                htmlTop += `
+                    <div style="margin-bottom: 8px; font-size:0.85rem; font-weight:600;">
+                        <div style="display:flex; justify-content:space-between; margin-bottom:3px;">
+                            <span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${esc(r.nome)}</span>
+                            <span>${r.qta} pz</span>
+                        </div>
+                        <div style="background:var(--border); height:6px; border-radius:3px; overflow:hidden;">
+                            <div style="background:var(--primary); height:100%; width:${perc}%;"></div>
+                        </div>
+                    </div>
+                `;
+            });
+            const top5el = document.getElementById('grafico-top5');
+            if(top5el) top5el.innerHTML = htmlTop || '<p style="font-size:0.8rem; color:var(--text-light)">Nessun dato.</p>';
+
+            const distribuzioneOre = {};
+            for(let h=0; h<24; h++) distribuzioneOre[h] = 0;
+            archivioRicevute.forEach(r => {
+                const ora = new Date(r.data).getHours();
+                distribuzioneOre[ora] += r.totale;
+            });
+            
+            let htmlOre = '';
+            const valMaxOra = Math.max(...Object.values(distribuzioneOre), 1);
+            Object.entries(distribuzioneOre).forEach(([ora, incasso]) => {
+                if(incasso === 0) return;
+                let perc = (incasso / valMaxOra) * 100;
+                htmlOre += `
+                    <div style="margin-bottom:6px; display:flex; align-items:center; gap:0.5rem; font-size:0.8rem; font-weight:600;">
+                        <span style="width:50px; color:var(--text-muted);">${ora}:00</span>
+                        <div style="flex:1; background:var(--border); height:8px; border-radius:4px; overflow:hidden;">
+                            <div style="background:var(--info); height:100%; width:${perc}%;"></div>
+                        </div>
+                        <span style="width:70px; text-align:right;">${formattaEuro(incasso)}</span>
+                    </div>
+                `;
+            });
+            const oreEl = document.getElementById('grafico-ore');
+            if(oreEl) oreEl.innerHTML = htmlOre || '<p style="font-size:0.8rem; color:var(--text-light)">Nessun incasso registrato.</p>';
+        }
+
+        window.eliminaCategoriaAdmin = function(nomeCat) {
+            if (confirm(`Sei sicuro di voler eliminare definitivamente la categoria '${nomeCat.toUpperCase()}'?`)) {
+                elencoCategorie = elencoCategorie.filter(x => x !== nomeCat);
+                if (configCategorie[nomeCat]) {
+                    delete configCategorie[nomeCat];
+                }
+                
+                salvaDatiLocali();
+                disegnaTabsCategoriaBanco();
+                inizializzaBancoVendita();
+                aggiornaSelettoreFiltroAdmin();
+                aggiornaElencoCategorieAdmin();
+                
+                if (typeof showToast === 'function') {
+                    showToast(`Categoria '${nomeCat.toUpperCase()}' eliminata.`, "success");
+                }
+            }
+        };
+
+        function aggiornaConfigCategoria(cat, chiave, valore) {
+            if(!configCategorie[cat]) configCategorie[cat] = {};
+            configCategorie[cat][chiave] = valore;
+            salvaDatiLocali();
+            disegnaTabsCategoriaBanco();
+            inizializzaBancoVendita();
+        }
+
+        function spostaCategoria(idx, dir) {
+            if(idx+dir < 0 || idx+dir >= elencoCategorie.length) return;
+            [elencoCategorie[idx], elencoCategorie[idx+dir]] = [elencoCategorie[idx+dir], elencoCategorie[idx]];
+            salvaDatiLocali();
+            aggiornaElencoCategorieAdmin();
+            disegnaTabsCategoriaBanco();
+            inizializzaBancoVendita();
+        }
+
+        function aggiungiOModificaCategoria() {
+            const v = document.getElementById('nuova-cat-nome').value.toLowerCase().trim();
+            if(!v) return;
+            
+            if(vecchioNomeCatInModifica) {
+                const vecchioIdx = elencoCategorie.indexOf(vecchioNomeCatInModifica);
+                if (vecchioIdx !== -1) elencoCategorie[vecchioIdx] = v;
+                databaseMenu.forEach(p => {
+                    if(p.categoria === vecchioNomeCatInModifica) p.categoria = v;
+                });
+                if(configCategorie[vecchioNomeCatInModifica]) {
+                    configCategorie[v] = configCategorie[vecchioNomeCatInModifica];
+                    delete configCategorie[vecchioNomeCatInModifica];
+                }
+                showToast("Categoria modificata.");
+            } else {
+                if(elencoCategorie.includes(v)) { showToast("Categoria già esistente.", "error"); return; }
+                elencoCategorie.push(v);
+                showToast("Categoria inserita.");
+            }
+            
+            document.getElementById('nuova-cat-nome').value = '';
+            annullaModificaCategoria();
+            salvaDatiLocali();
+            disegnaTabsCategoriaBanco();
+            inizializzaBancoVendita();
+            aggiornaSelettoreFiltroAdmin();
+            aggiornaTabellaReportEListino();
+            aggiornaElencoCategorieAdmin();
+        }
+
+        function avviaModificaCategoria(cat) {
+            vecchioNomeCatInModifica = cat;
+            document.getElementById('nuova-cat-nome').value = cat;
+            document.getElementById('btn-salva-cat').innerText = "Salva";
+            document.getElementById('btn-annulla-cat').style.display = "inline-block";
+        }
+        function annullaModificaCategoria() {
+            vecchioNomeCatInModifica = null;
+            document.getElementById('nuova-cat-nome').value = '';
+            document.getElementById('btn-salva-cat').innerText = "Aggiungi";
+            document.getElementById('btn-annulla-cat').style.display = "none";
+        }
+
+        function aggiungiOModificaMagazzino() {
+            const parola = document.getElementById('magazzino-parola').value.trim();
+            const qta = parseInt(document.getElementById('magazzino-qta').value);
+            if(!parola || isNaN(qta)) return;
+            
+            const esistente = databaseMagazzino.find(m => m.parolaChiave.toLowerCase() === parola.toLowerCase());
+            if(esistente) {
+                esistente.qta = qta;
+                showToast("Scorta aggiornata.");
+            } else {
+                databaseMagazzino.push({ parolaChiave: parola, qta: qta });
+                showToast("Parola chiave registrata.");
+            }
+            document.getElementById('magazzino-parola').value = '';
+            document.getElementById('magazzino-qta').value = '';
+            salvaDatiLocali();
+            aggiornaTabellaMagazzino();
+            inizializzaBancoVendita();
+        }
+
+        function modificaQtaMagazzinoDiretta(idx, valore) {
+            const v = parseInt(valore);
+            if(!isNaN(v)) {
+                databaseMagazzino[idx].qta = v;
+                salvaDatiLocali();
+                aggiornaTabellaMagazzino();
+                inizializzaBancoVendita();
+            }
+        }
+
+        function eliminaVoceMagazzino(idx) {
+            if(confirm("Vuoi eliminare questa voce dal monitoraggio scorte?")) {
+                databaseMagazzino.splice(idx, 1);
+                salvaDatiLocali();
+                aggiornaTabellaMagazzino();
+                inizializzaBancoVendita();
+                showToast("Voce eliminata dal magazzino.");
+            }
+        }
+
+        function scaricaMagazzinoDallaComanda() {
+            comandaAttuale.forEach(item => {
+                const nomeArticoloLower = item.nome.toLowerCase();
+                const qtaVenduta = item.quantita;
+                databaseMagazzino.forEach(m => {
+                    if (!m.parolaChiave || !String(m.parolaChiave).trim()) return;
+                    const parolaLower = String(m.parolaChiave).trim().toLowerCase();
+                    if(nomeArticoloLower.includes(parolaLower)) {
+                        m.qta -= qtaVenduta;
+                    }
+                });
+            });
+            salvaDatiLocali();
+            aggiornaTabellaMagazzino();
+        }
+
+        function aggiornaTabellaMagazzino() {
+            const corpo = document.getElementById('lista-controllo-magazzino');
+            if(!corpo) return;
+            corpo.innerHTML = '';
+            databaseMagazzino.forEach((m, idx) => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><strong>${esc(m.parolaChiave)}</strong></td>
+                    <td><input type="number" value="${m.qta}" onchange="modificaQtaMagazzinoDiretta(${idx}, this.value)" style="width:80px; padding:0.25rem; font-weight:600; text-align:center; border:1px solid var(--border); border-radius:var(--radius-sm); background:var(--surface); color:var(--text-main);"> pz</td>
+                    <td style="text-align:right;"><button class="btn-mini-azione btn-mini-elimina" onclick="eliminaVoceMagazzino(${idx})">Elimina</button></td>
+                `;
+                corpo.appendChild(tr);
+            });
+        }
+
+        function aggiornaTabellaReportEListino() {
+            const tb = document.getElementById('lista-controllo-menu');
+            const filtroEl = document.getElementById('filtro-categoria-admin');
+            if(!tb || !filtroEl) return;
+            const filtro = filtroEl.value;
+            tb.innerHTML = '';
+            
+            databaseMenu.forEach((p, i) => {
+                if(filtro !== 'TUTTE' && p.categoria !== filtro) return;
+                const catNome = p.categoria || '';
+                const catFormattata = catNome ? catNome.charAt(0).toUpperCase() + catNome.slice(1) : 'Generica';
+                tb.innerHTML += `<tr>
+                    <td><button class="btn-mini-azione" onclick="spostaProdotto(${i},-1)">▲</button><button class="btn-mini-azione" onclick="spostaProdotto(${i},1)">▼</button></td>
+                    <td><b>${esc(p.nome)}</b></td>
+                    <td>${catFormattata}</td>
+                    <td>${formattaEuro(p.prezzo)}</td>
+                    <td>${p.attivo!==false?'Attivo':'Nascosto'}</td>
+                    <td style="text-align:right; display:flex; gap:0.25rem; justify-content:flex-end;">
+                        <button class="btn-mini-azione btn-mini-modifica" onclick="avviaModificaProdotto(${p.id})">Mod.</button>
+                        <button class="btn-mini-azione" style="font-size:0.75rem;" onclick="toggleStatoVisibilitaProdotto(${p.id})">${p.attivo!==false?'Nascondi':'Mostra'}</button>
+                        <button class="btn-mini-azione" style="background:#ef4444; color:white; font-weight:bold;" onclick="event.stopPropagation(); if(confirm('Vuoi eliminare definitivamente questo prodotto dal listino menu?')) { databaseMenu = databaseMenu.filter(x => x.id !== ${p.id}); salvaDatiLocali(); inizializzaBancoVendita(); aggiornaTabellaReportEListino(); }">🗑️</button>
+                    </td>
+                </tr>`;
+            });
+
+            const trReport = document.getElementById('corpo-report-vendite');
+            if(trReport) {
+                trReport.innerHTML = '';
+                let incContanti = 0; let incPos = 0;
+                archivioRicevute.forEach(r => {
+                    if(r.metodo === 'CONTANTI') incContanti += r.totale;
+                    else incPos += r.totale;
+                });
+                
+                Object.entries(storicovendite).forEach(([nome, dati]) => {
+                    trReport.innerHTML += `<tr>
+                        <td><b>${esc(nome)}</b></td>
+                        <td>${esc(dati.categoria.toUpperCase())}</td>
+                        <td>${dati.qta} pz</td>
+                        <td><strong>${formattaEuro(dati.incasso)}</strong></td>
+                    </tr>`;
+                });
+                
+                document.getElementById('fin-contanti').innerText = formattaEuro(incContanti);
+                document.getElementById('fin-pos').innerText = formattaEuro(incPos);
+                document.getElementById('fin-totale').innerText = formattaEuro(incContanti + incPos);
+            }
+        }
+
+        function spostaProdotto(idx, dir) {
+            if(idx+dir < 0 || idx+dir >= databaseMenu.length) return;
+            [databaseMenu[idx], databaseMenu[idx+dir]] = [databaseMenu[idx+dir], databaseMenu[idx]];
+            salvaDatiLocali();
+            aggiornaTabellaReportEListino();
+            inizializzaBancoVendita();
+        }
+
+        function toggleStatoVisibilitaProdotto(id) {
+            const p = databaseMenu.find(x => x.id === id);
+            if(p) {
+                p.attivo = (p.attivo === false);
+                salvaDatiLocali();
+                aggiornaTabellaReportEListino();
+                inizializzaBancoVendita();
+            }
+        }
+
+        function aggiorSelettoriCategoriaModuloAdmin(val) {
+            const s = document.getElementById('nuova-categoria');
+            if(!s) return;
+            s.innerHTML = '';
+            elencoCategorie.forEach(c => s.innerHTML += `<option value="${esc(c)}">${esc(c.charAt(0).toUpperCase() + c.slice(1))}</option>`);
+            s.value = val;
+        }
+
+        function mostraArchivioRicevute() {
+            const c = document.getElementById('lista-ricevute-storico');
+            if(!c) return;
+            c.innerHTML = '';
+            if(archivioRicevute.length === 0) {
+                c.innerHTML = '<p style="font-size:0.85rem; color:var(--text-muted); padding:1rem;">Nessuno scontrino oggi.</p>';
+                return;
+            }
+            archivioRicevute.forEach(r => {
+                const d = document.createElement('div');
+                d.className = 'ricevuta-card-item';
+                d.onclick = (e) => {
+                    if(e.target.tagName !== 'BUTTON') d.classList.toggle('expanded');
+                };
+                
+                let scontrinoDettaglio = '';
+                if(r.intestazione) {
+                    scontrinoDettaglio += `<div style="font-size:0.75rem; color:var(--text-main); font-weight:700; margin-bottom:4px;">🏢 Intestazione: ${esc(r.intestazione)}</div>`;
+                }
+                
+                scontrinoDettaglio += '<ul style="list-style:none; padding:2px 0;">';
+                r.articoli.forEach(a => {
+                    scontrinoDettaglio += `<li>• ${a.quantita}x ${esc(a.nome)} (${formattaEuro(a.prezzo)}) ${a.variazione ? `<span style="color:var(--warning); font-size:0.7rem;">* ${esc(a.variazione)}</span>` : ''}</li>`;
+                });
+                scontrinoDettaglio += '</ul>';
+                
+                if(r.sconto && r.sconto > 0) {
+                    scontrinoDettaglio += `<div style="font-size:0.75rem; color:var(--danger); margin-top:4px;">Sconto applicato: -${formattaEuro(r.sconto)} (Su lordo di ${formattaEuro(r.subTotale || r.totale)})</div>`;
+                }
+
+                d.innerHTML = `
+                    <div style="display:flex;justify-content:space-between">
+                        <div><b>#${r.id}</b>${r.tavolo ? ` - ${esc(r.tavolo)}` : ''}<br><small>${new Date(r.data).toLocaleTimeString()} • ${esc(r.metodo)}</small></div>
+                        <div style="text-align:right;"><span style="font-weight:800; font-size:0.95rem; color:var(--success);">${formattaEuro(r.totale)}</span></div>
+                    </div>
+                    <div class="ricevuta-dettaglio">
+                        ${scontrinoDettaglio}
+                        <div style="margin-top:0.75rem; display:flex; justify-content:flex-end; gap:0.25rem;">
+                            <button class="btn-mini-azione" onclick="ristampaRicevutaArchiviata(${r.id})">🖨️ Ristampa</button>
+                            <button class="btn-mini-azione btn-mini-modifica" onclick="richiamaRicevuta(${r.id})">✏️ Modifica</button>
+                            <button class="btn-mini-azione btn-mini-elimina" onclick="eliminaRicevuta(${r.id})">🗑️ Elimina</button>
+                        </div>
+                    </div>
+                `;
+                c.appendChild(d);
+            });
+        }
+
+        function aggiornaSelettoreFiltroAdmin() {
+            const f = document.getElementById('filtro-categoria-admin');
+            if(!f) return;
+            const bkpVal = f.value;
+            f.innerHTML = '<option value="TUTTE">Tutte le Categorie</option>';
+            elencoCategorie.forEach(c => f.innerHTML += `<option value="${esc(c)}">${esc(c.toUpperCase())}</option>`);
+            if(elencoCategorie.includes(bkpVal)) f.value = bkpVal;
+        }
+
+        function avviaModificaProdotto(id) {
+            idArticoloInModifica = id;
+            const p = databaseMenu.find(x => x.id === id);
+            if(!p) return;
+            document.getElementById('nuovo-nome').value = p.nome;
+            document.getElementById('nuovo-prezzo').value = p.prezzo;
+            aggiorSelettoriCategoriaModuloAdmin(p.categoria);
+            document.getElementById('titolo-modulo-admin').innerText = "Modifica Articolo";
+            document.getElementById('btn-salva-articolo').innerText = "Salva Modifiche";
+            document.getElementById('btn-annulla-articolo').style.display = "inline-block";
+        }
+
+        function annullaStatoModifica() {
+            idArticoloInModifica = null;
+            document.getElementById('nuovo-nome').value = '';
+            document.getElementById('nuovo-prezzo').value = '';
+            document.getElementById('titolo-modulo-admin').innerText = "Anagrafica Articoli";
+            document.getElementById('btn-salva-articolo').innerText = "Salva";
+            document.getElementById('btn-annulla-articolo').style.display = "none";
+            aggiorSelettoriCategoriaModuloAdmin(elencoCategorie[0] || "");
+        }
+
+        function aggiungiOAggiornaProdottoAlListinoMenu() {
+            const nome = document.getElementById('nuovo-nome').value.trim();
+            const prezzo = parseFloat(document.getElementById('nuovo-prezzo').value);
+            const cat = document.getElementById('nuova-categoria').value;
+            if(!nome || isNaN(prezzo) || !cat) { showToast("Compila interamente i campi del prodotto", "error"); return; }
+            
+            if(idArticoloInModifica !== null) {
+                const p = databaseMenu.find(x => x.id === idArticoloInModifica);
+                if(p) { p.nome = nome; p.prezzo = prezzo; p.categoria = cat; showToast("Articolo salvato correttamente."); }
+            } else {
+                const maxId = databaseMenu.reduce((max, x) => x.id > max ? x.id : max, 0);
+                databaseMenu.push({ id: maxId + 1, categoria: cat, nome: nome, prezzo: prezzo, attivo: true });
+                showToast("Articolo inserito nel listino.");
+            }
+            annullaStatoModifica();
+            salvaDatiLocali();
+            aggiornaTabellaReportEListino();
+            inizializzaBancoVendita();
+        }
+
+        async function salvaDatiLocali() {
+            try {
+                await localforage.setItem('st_categorie_v7', elencoCategorie);
+                await localforage.setItem('st_menu_v7', databaseMenu);
+                await localforage.setItem('st_vendite_v7', storicovendite);
+                await localforage.setItem('st_ricevute_log_v7', archivioRicevute);
+                await localforage.setItem('st_chiusure_storico_v7', storicoChiusure);
+                await localforage.setItem('st_contatore_v7', contatoreRicevute);
+                await localforage.setItem('st_config_categorie_v7', configCategorie);
+                await localforage.setItem('st_magazzino_v7', databaseMagazzino);
+                
+                const elInt = document.getElementById('intestazione-ricevuta');
+                if(elInt) {
+                    await localforage.setItem('st_intestazione_fissa_v7', elInt.value);
+                }
+
+                inviaConfigurazioneAPalmari();
+            } catch (err) {
+                console.error("Errore durante il salvataggio dei dati nel database:", err);
+                showToast("Errore di salvataggio dati", "error");
+            }
+        }
+
+        async function inizializzaDatabase() {
+            try {
+                if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); // evita lo sgombero automatico dei dati da parte del browser
+                const cat = await localforage.getItem('st_categorie_v7');
+                if (cat) elencoCategorie = cat;
+                
+                const menu = await localforage.getItem('st_menu_v7');
+                if (menu) databaseMenu = menu;
+                
+                const vendite = await localforage.getItem('st_vendite_v7');
+                if (vendite) storicovendite = vendite;
+                
+                const ricevute = await localforage.getItem('st_ricevute_log_v7');
+                if (ricevute) archivioRicevute = ricevute;
+                
+                const chiusure = await localforage.getItem('st_chiusure_storico_v7');
+                if (chiusure) storicoChiusure = chiusure;
+                
+                const contatore = await localforage.getItem('st_contatore_v7');
+                if (contatore) contatoreRicevute = contatore;
+                contatoreRicevute = Math.max(contatoreRicevute, ...archivioRicevute.map(r => (Number(r.id) || 0) + 1));
+                
+                const configCat = await localforage.getItem('st_config_categorie_v7');
+                if (configCat) configCategorie = configCat;
+                
+                const magazzino = await localforage.getItem('st_magazzino_v7');
+                if (magazzino) databaseMagazzino = magazzino;
+
+                const inAttesa = await localforage.getItem('st_comande_remote_v8');
+                if (Array.isArray(inAttesa) && typeof comandeRemoteInAttesa !== 'undefined' && comandeRemoteInAttesa.length === 0) {
+                    inAttesa.forEach(raw => {
+                        const o = validaOrdineRemoto(raw);
+                        if (o) { if (raw && raw.origine === 'CASSA') o.origine = 'CASSA'; comandeRemoteInAttesa.push(o); }
+                    });
+                    aggiornaBarraNotifichePalmari();
+                }
+
+                disegnaTabsCategoriaBanco();
+                inizializzaBancoVendita();
+                aggiornaInterfacciaComanda();
+                
+                console.log("Database Inizializzato con successo");
+            } catch (err) {
+                console.error("Errore di lettura dal database:", err);
+            }
+        }
+
+        // --- SALVA E CAMBIA HOTSPOT DALLA CASSA ---
+        function salvaHotspotCassa() {
+            const nuovoId = document.getElementById('input-hotspot-id').value.trim();
+            if(nuovoId) {
+                STANZA_HOTSPOT_CONDIVISA = nuovoId;
+                localStorage.setItem('st_hotspot_id_v7', nuovoId);
+                showToast("ID di Rete aggiornato! Riavvio connessione...");
+                attivaRicezioneMqttPalmari();
+            }
+        }
+
+        function showToast(testo, tipo="success") {
+            const container = document.getElementById('toast-container');
+            if(!container) return;
+            const toast = document.createElement('div');
+            toast.className = `toast ${tipo}`;
+            toast.innerText = testo;
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.classList.add('fade-out');
+                setTimeout(() => toast.remove(), 250);
+            }, 2500);
+        }
+
+        // Scorciatoie da tastiera fisiche (F1, F2, Barra Spaziatrice)
+        window.addEventListener('keydown', (e) => {
+            if(e.key === 'F1') { e.preventDefault(); cambiaFinestra('CASSA'); }
+            if(e.key === 'F2') { e.preventDefault(); cambiaFinestra('ARCHIVIO'); }
+            if(e.key === ' ' && document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'SELECT' && document.activeElement.tagName !== 'TEXTAREA') {
+                if(comandaAttuale.length > 0 && !document.getElementById('modal-resto').classList.contains('active')) {
+                    e.preventDefault();
+                    apriModalResto();
+                }
+            }
+        });
+
+        if ('serviceWorker' in navigator && (window.location.protocol === 'http:' || window.location.protocol === 'https:')) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js').catch(err => console.log('SW Error', err));
+            });
+        }
+
+        document.getElementById('input-modal-nota')?.addEventListener('keydown', (e) => { if(e.key === 'Enter') salvaModalNota(); });
+        document.getElementById('input-contante')?.addEventListener('keydown', (e) => { 
+            if(e.key === 'Enter' && !document.getElementById('btn-conferma-resto').disabled) confermaPagamentoContanti(); 
+        });
+
+
+        // =========================================================================
+        // LOGICA DI RICEZIONE E TRASMISSIONE WIRELESS (MQTT)
+        // =========================================================================
+        let comandeRemoteInAttesa = [];
+        let clientMqttCassa = null;
+        let cassaAudioCtx = null; // Contesto audio globale persistente
+
+        let ordiniGiaRicevuti = [];
+        try { ordiniGiaRicevuti = JSON.parse(localStorage.getItem('st_oid_ricevuti_v8') || '[]'); } catch (e) { ordiniGiaRicevuti = []; }
+        let ultimoMenuInviato = '';
+
+        function impostaStatoRete(stato) {
+            let pill = document.getElementById('stato-rete-cassa');
+            if (!pill) {
+                pill = document.createElement('div');
+                pill.id = 'stato-rete-cassa';
+                pill.style.cssText = 'position:fixed; left:10px; bottom:10px; z-index:900; padding:4px 10px; border-radius:20px; font:700 0.7rem system-ui,sans-serif; color:#fff; opacity:0.9; pointer-events:none;';
+                document.body.appendChild(pill);
+            }
+            const mappa = { online: ['#10b981', '● Palmari: connesso'], connessione: ['#f59e0b', '● Palmari: connessione…'], offline: ['#ef4444', '● Palmari: offline'] };
+            const [colore, testo] = mappa[stato] || mappa.offline;
+            pill.style.background = colore;
+            pill.textContent = testo;
+        }
+
+        function attivaRicezioneMqttPalmari() {
+            if (clientMqttCassa) clientMqttCassa.end(true); // forza la chiusura prima di riaprire
+            if (typeof mqtt === 'undefined') {
+                impostaStatoRete('offline');
+                showToast("Libreria di rete non caricata (serve internet al primo avvio): i palmari non funzioneranno.", "error");
+                return;
+            }
+            const stanza = STANZA_HOTSPOT_CONDIVISA;
+            const tComande = `smartcassa/comande/${stanza}`;
+            const tRichiestaMenu = `smartcassa/menu_request/${stanza}`;
+            impostaStatoRete('connessione');
+            clientMqttCassa = mqtt.connect('wss://broker.emqx.io:8084/mqtt', {
+                clientId: 'cassa_' + Math.random().toString(16).slice(2, 10),
+                reconnectPeriod: 3000, connectTimeout: 10000, keepalive: 30
+            });
+
+            clientMqttCassa.on('connect', () => {
+                impostaStatoRete('online');
+                clientMqttCassa.subscribe([tComande, tRichiestaMenu], { qos: 1 });
+                inviaConfigurazioneAPalmari(true); // allinea subito i palmari
+            });
+            clientMqttCassa.on('reconnect', () => impostaStatoRete('connessione'));
+            clientMqttCassa.on('close', () => impostaStatoRete('offline'));
+            clientMqttCassa.on('offline', () => impostaStatoRete('offline'));
+            clientMqttCassa.on('error', (err) => console.error('Errore MQTT', err));
+
+            clientMqttCassa.on('message', (topic, message) => {
+                try {
+                    // Richiesta di sincronizzazione menu da parte di un palmare appena acceso
+                    if (topic === tRichiestaMenu) { inviaConfigurazioneAPalmari(true); return; }
+                    if (topic !== tComande || message.length > 50000) return;
+
+                    const ordine = validaOrdineRemoto(JSON.parse(message.toString()));
+                    if (!ordine) return;
+
+                    if (ordine.oid) {
+                        // Conferma di ricezione al palmare (anche per i duplicati, così smette di reinviare)
+                        clientMqttCassa.publish(`smartcassa/ack/${stanza}/${ordine.oid}`, JSON.stringify({ ok: true }), { qos: 1 });
+                        if (ordiniGiaRicevuti.includes(ordine.oid)) return; // già ricevuto: ignora il doppione
+                        ordiniGiaRicevuti = [...ordiniGiaRicevuti, ordine.oid].slice(-300);
+                        try { localStorage.setItem('st_oid_ricevuti_v8', JSON.stringify(ordiniGiaRicevuti)); } catch (e) {}
+                    }
+                    comandeRemoteInAttesa.push(ordine);
+                    window.riproduciSuonoNotificaCassa();
+                    aggiornaBarraNotifichePalmari();
+                } catch (e) {
+                    console.error("Errore decodifica messaggio MQTT", e);
+                }
+            });
+        }
+
+        // Funzione per trasmettere il menu corrente ai palmari (solo se è cambiato, o su richiesta)
+        function inviaConfigurazioneAPalmari(forza = false) {
+            if (clientMqttCassa && clientMqttCassa.connected) {
+                const pacchetto = JSON.stringify({ categorie: elencoCategorie, prodotti: databaseMenu, configCategorie: configCategorie });
+                if (!forza && pacchetto === ultimoMenuInviato) return;
+                ultimoMenuInviato = pacchetto;
+                clientMqttCassa.publish(`smartcassa/menu_sync/${STANZA_HOTSPOT_CONDIVISA}`, pacchetto, { qos: 1, retain: true });
+            }
+        }
+
+        function salvaComandeRemoteInAttesa() {
+            try { localforage.setItem('st_comande_remote_v8', comandeRemoteInAttesa); } catch (e) {}
+        }
+
+        function aggiornaBarraNotifichePalmari() {
+            salvaComandeRemoteInAttesa();
+            const box = document.getElementById('box-notifiche-palmari');
+            const scroller = document.getElementById('scroller-comande-remote');
+            const badge = document.getElementById('conteggio-remote-badge');
+
+            if(!box || !scroller) return;
+
+            if(comandeRemoteInAttesa.length === 0) {
+                box.style.display = 'none';
+                return;
+            }
+
+            box.style.display = 'flex';
+            if(badge) badge.innerText = `${comandeRemoteInAttesa.length} Pendenti`;
+
+            scroller.innerHTML = comandeRemoteInAttesa.map((c, idx) => {
+                let riepilogoTesto = c.articoli.map(a => `${a.quantita}x ${a.nome}`).join(', ');
+                if(riepilogoTesto.length > 50) riepilogoTesto = riepilogoTesto.substring(0, 47) + '...';
+                
+                return `
+                    <div style="background: white; border: 1px solid #e2e8f0; border-left: 4px solid #f59e0b; padding: 0.5rem; border-radius: 10px; font-size: 0.8rem; min-width: 240px; display: flex; align-items: center; justify-content: space-between; gap: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); color:#0f172a;">
+                        <div onclick="caricaComandaRemotaInScontrino(${idx})" style="cursor: pointer; flex: 1; display: flex; flex-direction: column; gap: 2px;">
+                            <strong style="font-weight:700;">📍 Tavolo: ${esc(c.tavolo.toUpperCase())}</strong>
+                            <span style="color: #475569; font-size: 0.72rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${esc(riepilogoTesto)}</span>
+                        </div>
+                        <button onclick="rifiutaComandaRemota(${idx})" style="background: #fee2e2; color: #ef4444; border: 1px solid #fca5a5; width: 32px; height: 32px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; transition: all 0.2s;" title="Elimina Comanda">🗑️</button>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        window.caricaComandaRemotaInScontrino = function(index) {
+            if (idRicevutaInModifica !== null) {
+                showToast("Chiudi o annulla prima la modifica dello scontrino in corso.", "error");
+                return;
+            }
+            if (comandaAttuale.length > 0) {
+                const conferma = confirm("⚠️ Attenzione! C'è già un ordine in corso in cassa.\n\nVuoi davvero sovrascriverlo e perderlo per caricare l'ordine dal palmare?");
+                if (!conferma) {
+                    return;
+                }
+            }
+
+            const comandaRemota = comandeRemoteInAttesa[index];
+            if(!comandaRemota) return;
+            
+            const inputTavolo = document.getElementById('num-tavolo');
+            if(inputTavolo) inputTavolo.value = comandaRemota.tavolo.toUpperCase();
+            
+            comandaAttuale = [];
+            
+            comandaRemota.articoli.forEach(art => {
+                const prod = databaseMenu.find(m => m.id === art.id);
+                if(prod) {
+                    comandaAttuale.push({
+                        id: prod.id,
+                        nome: prod.nome,
+                        prezzo: prod.prezzo,
+                        quantita: art.quantita,
+                        variazione: art.variazione || ""
+                    });
+                }
+            });
+
+            const articoliNonTrovati = comandaRemota.articoli.filter(a => !databaseMenu.some(m => m.id === a.id));
+            comandeRemoteInAttesa.splice(index, 1);
+            aggiornaBarraNotifichePalmari();
+            if(typeof aggiornaInterfacciaComanda === 'function') aggiornaInterfacciaComanda();
+            if (articoliNonTrovati.length > 0) {
+                showToast(`Attenzione: ${articoliNonTrovati.length} articolo/i non presenti nel listino e NON caricati: ${articoliNonTrovati.map(a => a.nome || ('#' + a.id)).join(', ')}`, "error");
+            }
+            if(typeof showToast === 'function') showToast(`Caricata comanda: ${comandaRemota.tavolo.toUpperCase()}`);
+        };
+
+        window.rifiutaComandaRemota = function(index) {
+            const conferma = confirm("Vuoi davvero eliminare questa comanda in arrivo dal palmare senza caricarla?");
+            if (conferma) {
+                comandeRemoteInAttesa.splice(index, 1);
+                aggiornaBarraNotifichePalmari();
+                if(typeof showToast === 'function') showToast("Comanda del palmare eliminata.", "error");
+            }
+        };
+
+        // 🔊 COMPONENTE AUDIO AD ALTA EFFICIENZA CON NOTIFICA "DIN-DON" REALE
+        window.riproduciSuonoNotificaCassa = function() {
+            try {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                if (!AudioContext) return;
+
+                if (!cassaAudioCtx) {
+                    cassaAudioCtx = new AudioContext();
+                }
+
+                if (cassaAudioCtx.state === 'suspended') {
+                    cassaAudioCtx.resume();
+                }
+
+                const ctx = cassaAudioCtx;
+                
+                // Nota 1 (Campanello principale alto)
+                const osc1 = ctx.createOscillator();
+                const gain1 = ctx.createGain();
+                osc1.type = 'sine';
+                osc1.frequency.setValueAtTime(880, ctx.currentTime); // La5 molto nitido
+                gain1.gain.setValueAtTime(0.35, ctx.currentTime);
+                gain1.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+                osc1.connect(gain1);
+                gain1.connect(ctx.destination);
+                osc1.start();
+                osc1.stop(ctx.currentTime + 0.4);
+
+                // Nota 2 (Armonica accoppiata dopo 0.08s per effetto Din-Don reale)
+                setTimeout(() => {
+                    try {
+                        if (ctx.state === 'suspended') return;
+                        const osc2 = ctx.createOscillator();
+                        const gain2 = ctx.createGain();
+                        osc2.type = 'sine';
+                        osc2.frequency.setValueAtTime(1174.66, ctx.currentTime); // Re6 squillante ambiente
+                        gain2.gain.setValueAtTime(0.22, ctx.currentTime);
+                        gain2.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+                        osc2.connect(gain2);
+                        gain2.connect(ctx.destination);
+                        osc2.start();
+                        osc2.stop(ctx.currentTime + 0.4);
+                    } catch(e){}
+                }, 80);
+
+            } catch(e) {
+                console.log("Errore audio:", e);
+            }
+        };
+
+        // 🔐 GENERATORE SCHERMATA INTERATTIVA D'AVVIO PER ABILITARE L'AUDIO IMMEDIATAMENTE
+        function creaOverlaySbloccoAudio() {
+            if (document.getElementById('audio-starter-overlay')) return;
+            
+            const overlay = document.createElement('div');
+            overlay.id = 'audio-starter-overlay';
+            overlay.style = "position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(12px); display: flex; align-items: center; justify-content: center; z-index: 999999; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; opacity: 0; transition: opacity 0.4s ease;";
+            
+            overlay.innerHTML = `
+                <div id="card-avvio-cassa" style="background: #ffffff; color: #0f172a; padding: 3rem 2.5rem; border-radius: 20px; text-align: center; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.4); max-width: 440px; width: 90%; border: 1px solid rgba(255, 255, 255, 0.1); transform: translateY(20px); transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1); display: flex; flex-direction: column; align-items: center;">
+                    <div style="width: 64px; height: 64px; background: #f1f5f9; color: #0f172a; border-radius: 16px; display: flex; align-items: center; justify-content: center; margin-bottom: 1.5rem; font-size: 1.6rem; animation: cassaPulse 2s infinite;">💼</div>
+                    <h2 style="margin: 0 0 0.75rem 0; font-size: 1.6rem; font-weight: 700; letter-spacing: -0.02em; color: #0f172a;">Avvio Applicazione</h2>
+                    <p style="color: #64748b; font-size: 0.95rem; line-height: 1.6; margin: 0 0 2rem 0; font-weight: 400;">Inizializzazione del sistema gestionale in corso. Premere il pulsante sottostante per autenticare la sessione e abilitare i moduli audio di notifica.</p>
+                    <button id="btn-inizializza-cassa" onclick="window.avviaCassaConAudio()" style="background: #0f172a; color: #ffffff; border: none; padding: 1rem; font-size: 1rem; font-weight: 600; border-radius: 12px; cursor: pointer; width: 100%; display: flex; align-items: center; justify-content: center; gap: 0.5rem; box-shadow: 0 4px 12px rgba(15, 23, 42, 0.15); transition: all 0.2s ease; letter-spacing: 0.01em;">
+                        <span>Inizia Sessione</span>
+                        <span style="font-size: 0.9rem; opacity: 0.7;">→</span>
+                    </button>
+                </div>
+                <style>
+                    @keyframes cassaPulse {
+                        0% { transform: scale(1); }
+                        50% { transform: scale(1.06); }
+                        100% { transform: scale(1); }
+                    }
+                
+        /* --- BARRA DI NAVIGAZIONE TOP-TIER ULTIMATE (STILE NATIVO MOBILE CON SWIPE FLUIDO) --- */
+        .nav-buttons { 
+            display: flex; 
+            gap: 6px; 
+            background: var(--bg-main); 
+            padding: 5px; 
+            border-radius: 16px; 
+            align-items: center;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.04);
+            border: 1px solid var(--border);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            overflow-x: auto; /* Permette lo swipe orizzontale su telefoni o tablet stretti senza andare a capo */
+            white-space: nowrap;
+            scrollbar-width: none; /* Nasconde scrollbar su Firefox */
+            -ms-overflow-style: none; /* Nasconde scrollbar su IE */
+            max-width: 100%;
+        }
+        
+        .nav-buttons::-webkit-scrollbar {
+            display: none; /* Nasconde scrollbar su Chrome, Safari e iOS */
+        }
+        
+        body.dark-mode .nav-buttons {
+            background: rgba(15, 23, 42, 0.6);
+            border-color: rgba(255, 255, 255, 0.08);
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        
+        .btn-nav { 
+            background: transparent; 
+            border: none; 
+            color: var(--text-muted); 
+            padding: 0.65rem 1.4rem; 
+            border-radius: 11px; 
+            font-weight: 600; 
+            font-size: 0.88rem; 
+            cursor: pointer; 
+            transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1); /* Transizione ad effetto rimbalzo premium */
+            display: inline-flex; 
+            align-items: center; 
+            gap: 0.6rem; 
+            user-select: none;
+            position: relative;
+            z-index: 1;
+        }
+        
+        /* Linea di accento inferiore ultra-sottile per evidenziare il tab attivo */
+        .btn-nav::after {
+            content: '';
+            position: absolute;
+            bottom: 4px;
+            left: 50%;
+            transform: translateX(-50%) scaleX(0);
+            width: 16px;
+            height: 3px;
+            background-color: var(--primary);
+            border-radius: 2px;
+            transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        
+        /* Feedback al passaggio del cursore o sfioramento */
+        .btn-nav:hover:not(.active) { 
+            color: var(--text-main); 
+            background: rgba(255, 255, 255, 0.5); 
+        }
+        
+        body.dark-mode .btn-nav:hover:not(.active) {
+            background: rgba(255, 255, 255, 0.04);
+        }
+        
+        /* Effetto pressione con compressione dinamica molto piacevole al tocco */
+        .btn-nav:active {
+            transform: scale(0.93);
+        }
+
+        /* Pulsante Attivo - Rialzato tridimensionalmente con ombreggiatura morbida e attiva */
+        .btn-nav.active { 
+            background: var(--surface) !important; 
+            color: var(--primary) !important; 
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.03) !important; 
+            font-weight: 700; 
+        }
+        
+        .btn-nav.active::after {
+            transform: translateX(-50%) scaleX(1);
+        }
+        
+        body.dark-mode .btn-nav.active {
+            background: #1e293b !important;
+            color: #3b82f6 !important;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15), 0 1px 2px rgba(0, 0, 0, 0.2) !important;
+        }
+        
+        body.dark-mode .btn-nav.active::after {
+            background-color: #3b82f6;
+        }
+
+        /* Supporto per lo switch dinamico "Nota Auto" */
+        .switch-auto-nota {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.78rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            padding: 6px 12px;
+            border-radius: 11px;
+            background: rgba(255, 255, 255, 0.3);
+            margin-right: 4px;
+            border: 1px solid rgba(0, 0, 0, 0.02);
+            user-select: none;
+            transition: all 0.25s ease;
+        }
+        
+        body.dark-mode .switch-auto-nota {
+            background: rgba(0, 0, 0, 0.25);
+            border-color: rgba(255, 255, 255, 0.04);
+        }
+        
+        .switch-auto-nota input[type="checkbox"] {
+            accent-color: var(--success);
+            cursor: pointer;
+            width: 14px;
+            height: 14px;
+        }
+
+    </style>
+            `;
+            
+            document.body.appendChild(overlay);
+
+            // Trigger animazione ingresso (Fade-in + Slide-up)
+            setTimeout(() => {
+                overlay.style.opacity = '1';
+                const card = document.getElementById('card-avvio-cassa');
+                if (card) card.style.transform = 'translateY(0)';
+            }, 50);
+
+            // Effetti hover dinamici professionali per il pulsante
+            const btn = overlay.querySelector('#btn-inizializza-cassa');
+            if (btn) {
+                btn.onmouseenter = () => {
+                    btn.style.background = '#1e293b';
+                    btn.style.transform = 'translateY(-1px)';
+                    btn.style.boxShadow = '0 6px 20px rgba(15, 23, 42, 0.2)';
+                };
+                btn.onmouseleave = () => {
+                    btn.style.background = '#0f172a';
+                    btn.style.transform = 'translateY(0)';
+                    btn.style.boxShadow = '0 4px 12px rgba(15, 23, 42, 0.15)';
+                };
+            }
+        }
+
+        window.avviaCassaConAudio = function() {
+            try {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                if (AudioContext) {
+                    cassaAudioCtx = new AudioContext();
+                    if (cassaAudioCtx.state === 'suspended') {
+                        cassaAudioCtx.resume();
+                    }
+                    
+                    // Emette una micro-nota acustica di feedback reale per validare definitivamente la cassa nel browser
+                    let osc = cassaAudioCtx.createOscillator();
+                    let gain = cassaAudioCtx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(650, cassaAudioCtx.currentTime); 
+                    gain.gain.setValueAtTime(0.05, cassaAudioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, cassaAudioCtx.currentTime + 0.04);
+                    
+                    osc.connect(gain);
+                    gain.connect(cassaAudioCtx.destination);
+                    osc.start(); 
+                    osc.stop(cassaAudioCtx.currentTime + 0.04);
+                    console.log("Scheda Audio attivata e registrata con successo!");
+                }
+            } catch(e) {
+                console.error("Errore inizializzazione audio:", e);
+            }
+            
+            const overlay = document.getElementById('audio-starter-overlay');
+            const card = document.getElementById('card-avvio-cassa');
+            if (overlay) {
+                overlay.style.opacity = '0';
+                if (card) card.style.transform = 'translateY(-15px)';
+                setTimeout(() => {
+                    overlay.remove();
+                }, 400);
+            }
+        };
+
+        // Blocco salvavita: intercetta la chiusura o il ricaricamento accidentale della pagina
+        window.addEventListener('beforeunload', (event) => {
+            const corpoComanda = document.getElementById('corpo-comanda');
+            // Verifica se nel contenitore grafico della comanda sono presenti elementi attivi
+            const haArticoli = corpoComanda && corpoComanda.querySelector('.item-comanda');
+            
+            if (haArticoli) {
+                event.preventDefault();
+                // Questo valore attiva la finestra di dialogo standard del browser
+                event.returnValue = 'Ci sono articoli nella comanda corrente. Sicuro di voler uscire?';
+            }
+        });
+
+        window.onload = () => {
+            // Forza la creazione della schermata d'attivazione salvavita per i browser
+            creaOverlaySbloccoAudio();
+
+            const inputHotspot = document.getElementById('input-hotspot-id');
+            if (inputHotspot) inputHotspot.value = STANZA_HOTSPOT_CONDIVISA;
+
+            attivaRicezioneMqttPalmari();
+            
+            // Attendo che localforage carichi l'intestazione
+            localforage.getItem('st_intestazione_fissa_v7').then(savedInt => {
+                if(savedInt && document.getElementById('intestazione-ricevuta')) {
+                    document.getElementById('intestazione-ricevuta').value = savedInt;
+                }
+            });
+
+            cambiaFinestra('CASSA');
+            aggiornaInterfacciaFormatoStampa();
+            aggiornaIconaAnteprima();
+            
+            // Avvio il caricamento asincrono del database
+            inizializzaDatabase();
+        };
+
+        /* ==========================================================================
+           1. OROLOGIO DI SISTEMA
+           ========================================================================== */
+        setInterval(() => {
+            const elData = document.getElementById('data-ora');
+            if (elData) elData.innerText = new Date().toLocaleTimeString('it-IT');
+        }, 1000);
+
+        /* ==========================================================================
+           2. STATO GLOBALE E INIEZIONE STILI CSS CORRETTI
+           ========================================================================== */
+        window.autoApriNotaStato = true; 
+        let ultimoStatoPalmariString = "";
+
+        const stileVisteSpeciali = document.createElement('style');
+        stileVisteSpeciali.innerHTML = `
+            body.view-comanda-full #pane-cassa { display: flex !important; width: 100%; max-width: 100%; }
+            body.view-comanda-full .menu-container { display: none !important; }
+            body.view-comanda-full .comanda-container { display: flex !important; flex: 1 !important; max-width: 100% !important; position: static !important; max-height: none !important; height: auto !important; padding: 10px !important; }
+            body.view-comanda-full .ragione-sociale, body.view-comanda-full .azienda-info, body.view-comanda-full #intestazione-ricevuta, body.view-comanda-full .ricevuta-header, body.view-comanda-full #btn-azione-ricevuta, body.view-comanda-full #btn-azione-cucina, body.view-comanda-full #btn-azione-bar, body.view-comanda-full .blocco-pagamento, body.view-comanda-full .comanda-actions, body.view-comanda-full .payment-methods, body.view-comanda-full .tastiera-rapida, body.view-comanda-full .quick-actions, body.view-comanda-full .sezione-sconto, body.view-comanda-full [class*="sconto"], body.view-comanda-full [id*="sconto"], body.view-comanda-full .comanda-container > div:has(button) { display: none !important; }
+            body.view-comanda-full .item-comanda, body.view-comanda-full .prodotto-riga { padding: 6px 10px !important; margin-bottom: 4px !important; font-size: 1.05rem !important; }
+            body.view-comanda-full .corpo-comanda, body.view-comanda-full #corpo-comanda { flex: 1 !important; max-height: calc(100vh - 140px) !important; overflow-y: auto !important; scrollbar-width: thin !important; -webkit-overflow-scrolling: touch !important; }
+            
+            .nota-variazione { pointer-events: auto !important; cursor: pointer !important; }
+            .switch-auto-nota { display: flex; align-items: center; gap: 6px; background: #f1f5f9; padding: 6px 10px; border-radius: 6px; font-size: 0.85rem; font-weight: 700; color: #0f172a; border: 1px solid #e2e8f0; user-select: none; cursor: pointer; }
+            .switch-auto-nota input { cursor: pointer; width: 18px; height: 18px; margin: 0; pointer-events: auto; }
+        `;
+        document.head.appendChild(stileVisteSpeciali);
+
+        /* ==========================================================================
+           3. INIZIALIZZAZIONE PULSANTI BARRA DI NAVIGAZIONE
+           ========================================================================== */
+        function setupBarraNavigazione() {
+            const barraNavigazione = document.querySelector('.nav-buttons');
+            if (!barraNavigazione) return;
+
+            barraNavigazione.querySelectorAll('.btn-nav').forEach(btn => {
+                const testo = btn.innerText.toLowerCase();
+                if (testo.includes('palmari') || testo.includes('parcheggi')) {
+                    if (btn.id !== 'nav-palmari-full') {
+                        btn.remove();
+                    }
+                }
+            });
+
+            if (!document.getElementById('container-switch-auto-nota')) {
+                const containerLabel = document.createElement('label');
+                containerLabel.id = 'container-switch-auto-nota';
+                containerLabel.className = 'switch-auto-nota';
+                containerLabel.style.marginRight = 'auto'; 
+                containerLabel.style.marginLeft = '10px';
+                containerLabel.innerHTML = `<input type="checkbox" id="chk-auto-nota" checked> ⚡ Nota Auto`;
+                barraNavigazione.prepend(containerLabel);
+                
+                const chkInput = containerLabel.querySelector('input');
+                chkInput.addEventListener('change', function(e) {
+                    window.autoApriNotaStato = e.target.checked;
+                    if (typeof localforage !== 'undefined') localforage.setItem('auto_apri_nota', window.autoApriNotaStato);
+                });
+
+                if (typeof localforage !== 'undefined') {
+                    localforage.getItem('auto_apri_nota').then(function(val) {
+                        if (val !== null) {
+                            window.autoApriNotaStato = (val === true || val === 'true');
+                            chkInput.checked = window.autoApriNotaStato;
+                        }
+                    }).catch(err => console.error(err));
+                }
+            }
+
+            if (!document.getElementById('nav-comanda-full')) {
+                const btnCassa = document.getElementById('nav-cassa');
+                const nuovoBottone = document.createElement('button');
+                nuovoBottone.id = 'nav-comanda-full';
+                nuovoBottone.className = 'btn-nav';
+                nuovoBottone.innerHTML = '🛒 Prodotti Aggiunti';
+                nuovoBottone.addEventListener('click', () => cambiaFinestra('COMANDA_FULL'));
+                
+                if (btnCassa && btnCassa.nextSibling) {
+                    barraNavigazione.insertBefore(nuovoBottone, btnCassa.nextSibling);
+                } else {
+                    barraNavigazione.appendChild(nuovoBottone);
+                }
+            }
+
+            if (!document.getElementById('nav-palmari-full')) {
+                const btnPalmari = document.createElement('button');
+                btnPalmari.id = 'nav-palmari-full';
+                btnPalmari.className = 'btn-nav';
+                btnPalmari.innerHTML = '📱 Palmari/Parcheggio <span id="badge-nav-palmari" style="display:none; margin-left:4px; font-size:0.7rem; padding:1px 6px; background:var(--danger); color:white; border-radius:10px;">0</span>';
+                btnPalmari.addEventListener('click', () => cambiaFinestra('PALMARI_FULL'));
+                barraNavigazione.appendChild(btnPalmari);
+            }
+        }
+
+        /* ==========================================================================
+           4. ROUTER CENTRALIZZATO FINESTRE
+           ========================================================================== */
+        if (typeof cambiaFinestra === 'function' && !window.cambiaFinestraIntercettata) {
+            window.cambiaFinestraIntercettata = true;
+            const cambiaFinestraOriginale = cambiaFinestra;
+
+            cambiaFinestra = function(tipo) {
+                document.body.classList.remove('view-comanda-full', 'view-palmari-full');
+                document.querySelectorAll('.btn-nav').forEach(b => b.classList.remove('active'));
+                
+                const panePalmari = document.getElementById('pane-comande-palmari');
+                if (panePalmari) panePalmari.classList.remove('active');
+
+                if (tipo === 'COMANDA_FULL') {
+                    document.querySelectorAll('.window-pane').forEach(p => p.classList.remove('active'));
+                    document.body.classList.add('view-comanda-full');
+                    const pannelloCassa = document.getElementById('pane-cassa');
+                    if (pannelloCassa) pannelloCassa.classList.add('active');
+                    const btnFull = document.getElementById('nav-comanda-full');
+                    if (btnFull) btnFull.classList.add('active');
+                } else if (tipo === 'PALMARI_FULL') {
+                    document.querySelectorAll('.window-pane').forEach(p => p.classList.remove('active'));
+                    document.body.classList.add('view-palmari-full');
+                    if (panePalmari) panePalmari.classList.add('active');
+                    const btnPalmari = document.getElementById('nav-palmari-full');
+                    if (btnPalmari) btnPalmari.classList.add('active');
+                } else {
+                    cambiaFinestraOriginale(tipo);
+                }
+            };
+        }
+
+        /* ==========================================================================
+           5. GESTIONE INTEGRATA E SINCRONIZZAZIONE PALMARI / PARCHEGGI
+           ========================================================================== */
+        if (typeof riparcheggiaComanda === 'function' && !riparcheggiaComanda._hooked) {
+            const origRiparcheggia = riparcheggiaComanda;
+            riparcheggiaComanda = function() {
+                if (typeof comandeRemoteInAttesa !== 'undefined' && Array.isArray(comandeRemoteInAttesa)) {
+                    const lenPrima = comandeRemoteInAttesa.length;
+                    origRiparcheggia.apply(this, arguments);
+                    if (comandeRemoteInAttesa.length > lenPrima) {
+                        comandeRemoteInAttesa[comandeRemoteInAttesa.length - 1].origine = 'CASSA';
+                    }
+                } else {
+                    origRiparcheggia.apply(this, arguments);
+                }
+            };
+            riparcheggiaComanda._hooked = true;
+            window.riparcheggiaComanda = riparcheggiaComanda;
+        }
+
+        window.sincronizzaInterfacciaPalmari = function() {
+            const listaContenitore = document.getElementById('lista-comande-palmari');
+            const msgVuoto = document.getElementById('messaggio-vuoto-palmari');
+            const badgeNav = document.getElementById('badge-nav-palmari');
+            const badgeTitolo = document.getElementById('counter-palmari');
+            
+            if (!listaContenitore) return;
+            if (typeof comandeRemoteInAttesa === 'undefined' || !Array.isArray(comandeRemoteInAttesa)) return;
+
+            const statoAttualeString = JSON.stringify(comandeRemoteInAttesa);
+            if (statoAttualeString === ultimoStatoPalmariString) return;
+            ultimoStatoPalmariString = statoAttualeString;
+
+            listaContenitore.querySelectorAll('.scheda-comanda-palmare').forEach(s => s.remove());
+            const totaleComande = comandeRemoteInAttesa.length;
+
+            if (totaleComande === 0) {
+                if (msgVuoto) msgVuoto.style.display = 'block';
+                if (badgeNav) badgeNav.style.display = 'none';
+                if (badgeTitolo) badgeTitolo.style.display = 'none';
+                return;
+            }
+
+            if (msgVuoto) msgVuoto.style.display = 'none';
+            if (badgeNav) { badgeNav.innerText = totaleComande; badgeNav.style.display = 'inline-block'; }
+            if (badgeTitolo) { badgeTitolo.innerText = totaleComande + ' Nuove'; badgeTitolo.style.display = 'inline-block'; }
+
+            comandeRemoteInAttesa.forEach(function(comanda, index) {
+                const tavoloNome = comanda.tavolo ? comanda.tavolo.toUpperCase() : 'N/D';
+                let articlesDettaglio = '';
+                if (comanda.articoli && Array.isArray(comanda.articoli)) {
+                    articlesDettaglio = comanda.articoli.map(art => 
+                        `• ${art.quantita}x ${esc(art.nome)}${art.variazione ? ' (' + esc(art.variazione) + ')' : ''}`
+                    ).join('\n');
+                }
+
+                let labelOrigine = '';
+                if (comanda.origine === 'CASSA') {
+                    labelOrigine = `<span style="background: #fef3c7; color: #b45309; font-size: 0.75rem; padding: 2px 6px; border-radius: 4px; font-weight: 800;">💻 CASSA</span>`;
+                } else {
+                    labelOrigine = `<span style="background: #e0f2fe; color: #0369a1; font-size: 0.75rem; padding: 2px 6px; border-radius: 4px; font-weight: 800;">📱 PALMARE</span>`;
+                }
+
+                const scheda = document.createElement('div');
+                scheda.className = 'scheda-comanda-palmare';
+                scheda.innerHTML = `
+                    <div class="header-scheda-palmare" style="display:flex; justify-content:space-between; align-items:center;">
+                        <span>📋 Tavolo: ${esc(tavoloNome)}</span>
+                        ${labelOrigine}
+                    </div>
+                    <div class="corpo-scheda-palmare" style="white-space: pre-line;">${articlesDettaglio}</div>
+                    <div class="footer-scheda-palmare">
+                        <button class="btn-azione btn-stampa-completa" style="margin:0; width:100%; font-weight:700; height:auto; padding:0.6rem;" onclick="window.gestisciCaricaPalmare('${index}')">📥 Carica</button>
+                        <button class="btn-azione btn-svuota" style="margin:0; width:100%; font-weight:600; height:auto; padding:0.5rem;" onclick="window.gestisciAnnullaPalmare('${index}')">Elimina</button>
+                    </div>`;
+                
+                listaContenitore.appendChild(scheda);
+            });
+        };
+
+        window.gestisciCaricaPalmare = function(index) {
+            const idx = parseInt(index, 10);
+            if (typeof caricaComandaRemotaInScontrino === 'function') {
+                caricaComandaRemotaInScontrino(idx);
+            }
+            cambiaFinestra('CASSA');
+        };
+
+        window.gestisciAnnullaPalmare = function(index) {
+            const idx = parseInt(index, 10);
+            if (confirm('Sei sicuro di voler eliminare questa comanda/parcheggio?')) {
+                if (typeof rifiutaComandaRemota === 'function') {
+                    rifiutaComandaRemota(idx);
+                }
+            }
+        };
+
+        /* ==========================================================================
+           6. PIPELINE ARTICOLI E GESTIONE HOOK NOTE AUTO
+           ========================================================================== */
+        window.aggiungiArticoloInComanda = function(id) {
+            const p = databaseMenu.find(m => m.id === id);
+            if(!p) return;
+            
+            let targetIndex = -1;
+            const esistente = comandaAttuale.find(i => i.id === id && !i.variazione);
+            
+            if(esistente) {
+                esistente.quantita++;
+                targetIndex = comandaAttuale.indexOf(esistente);
+            } else {
+                comandaAttuale.push({ id: p.id, nome: p.nome, prezzo: p.prezzo, quantita: 1, variazione: "" });
+                targetIndex = comandaAttuale.length - 1;
+            }
+            
+            if(typeof aggiornaInterfacciaComanda === 'function') aggiornaInterfacciaComanda();
+            if(typeof showToast === 'function') showToast(`Aggiunto: ${p.nome}`);
+            
+            if (targetIndex !== -1 && window.autoApriNotaStato === true) {
+                if (typeof window.apriModalNota === 'function') {
+                    window.apriModalNota(targetIndex);
+                }
+            }
+        };
+
+        if (typeof apriPromptNota === 'function') {
+            apriPromptNota = function(idx) {
+                window.apriModalNota(idx);
+            };
+        }
+
+        if (typeof apriModalNota === 'function') {
+            const originaleApriModalNota = apriModalNota;
+            apriModalNota = function(idx) {
+                const modalNota = document.getElementById('modal-nota');
+                const inputNota = document.getElementById('input-modal-nota');
+                if (modalNota) {
+                    indexNotaModifica = idx;
+                    if (inputNota && comandaAttuale[idx]) {
+                        inputNota.value = comandaAttuale[idx].variazione || '';
+                    }
+                    modalNota.classList.add('active');
+                    modalNota.style.display = 'flex';
+                    if (inputNota) setTimeout(() => inputNota.focus(), 150);
+                    return;
+                }
+                originaleApriModalNota(idx);
+            };
+            window.apriModalNota = apriModalNota;
+        }
+
+        setTimeout(setupBarraNavigazione, 150);
+        setInterval(sincronizzaInterfacciaPalmari, 500);
+
+        /* ==========================================================================
+           7. ESPORTAZIONE EXCEL (CSV) PROFESSIONALE E POTENZIATA (CON FORMATO EURO)
+           ========================================================================== */
+        function esportaReportCSV() {
+            let csv = "";
+            
+            let incContanti = 0; let incPos = 0;
+            archivioRicevute.forEach(r => {
+                if(r.metodo === 'CONTANTI') incContanti += r.totale;
+                else incPos += r.totale;
+            });
+            let incTotale = incContanti + incPos;
+
+            // --- SEZIONE MASTER: CRUSCOTTO DIREZIONALE FINANZIARIO ---
+            csv += "========================================================\n";
+            csv += "📊 SMARTCASSA PRO - RIEPILOGO FINANZIARIO COMMERCIALE\n";
+            csv += "========================================================\n";
+            csv += `Data Report;${new Date().toLocaleDateString('it-IT')} ore ${new Date().toLocaleTimeString('it-IT')}\n`;
+            csv += `Scontrini Emessi Totali;${archivioRicevute.length}\n`;
+            csv += `Incasso Netto Contanti;"€ ${incContanti.toFixed(2).replace('.', ',')}"\n`;
+            csv += `Incasso Netto POS;"€ ${incPos.toFixed(2).replace('.', ',')}"\n`;
+            csv += `🏆 FATTURATO COMMERCIALE TOTALE;"€ ${incTotale.toFixed(2).replace('.', ',')}"\n`;
+            csv += "========================================================\n\n\n";
+
+            // --- SEZIONE 1: REPORT AGGREGATO VENDITE ARTICOLI ---
+            csv += "=== SEZIONE 1: REPORT AGGREGATO VENDITE DI LISTINO ===\n";
+            csv += "Categoria;Articolo;Quantita Venduta;Incasso Totale Lordo\n";
+            let totQta = 0; let totIncassoArticoli = 0;
+            const righe = Object.entries(storicovendite).map(([n, d]) => ({
+                nome: n, cat: (d.categoria || "Altro").toUpperCase(), qta: d.qta, incasso: d.incasso
+            }));
+            righe.sort((a, b) => a.cat.localeCompare(b.cat));
+            righe.forEach(r => {
+                totQta += r.qta; totIncassoArticoli += r.incasso;
+                csv += `"${r.cat.replace(/"/g, '""')}";"${r.nome.replace(/"/g, '""')}";${r.qta};"€ ${r.incasso.toFixed(2).replace('.', ',')}"\n`;
+            });
+            csv += `"TOTALE COMPLESSIVO PIATTI";"";${totQta};"€ ${totIncassoArticoli.toFixed(2).replace('.', ',')}"\n\n\n`;
+            
+            // --- SEZIONE 2: ARCHIVIO REGISTRO TRANSAZIONI ---
+            csv += "=== SEZIONE 2: REGISTRO MATRICE DI TUTTI GLI SCONTRINI ===\n";
+            csv += "ID Scontrino;Data Emissione;Ora;Tavolo/Riferimento;Ragione Sociale/Intestazione;Metodo Pagamento;Lordo;Sconto;Netto Incassato;Dettaglio Piatti Ordinati\n";
+            
+            const ricevuteOrdinate = [...archivioRicevute].reverse();
+            ricevuteOrdinate.forEach(r => {
+                let dataOra = new Date(r.data);
+                let dataStr = dataOra.toLocaleDateString('it-IT');
+                let oraStr = dataOra.toLocaleTimeString('it-IT');
+                
+                let articoliStr = "";
+                if (r.articoli && Array.isArray(r.articoli)) {
+                    articoliStr = r.articoli.map(a => `${a.quantita}x ${a.nome}${a.variazione ? ' ['+a.variazione+']' : ''}`).join(" | ");
+                }
+                
+                let idScontrino = r.id || "";
+                let tavolo = r.tavolo || "BANCO";
+                let intestazione = r.intestazione || "CLIENTE OCCASIONALE";
+                let metodo = r.metodo || "CONTANTI";
+                let subTotale = r.subTotale || r.totale || 0;
+                let sconto = r.sconto || 0;
+                let totale = r.totale || 0;
+                
+                csv += `${idScontrino};"${dataStr}";"${oraStr}";"${tavolo.replace(/"/g, '""')}";"${intestazione.replace(/"/g, '""')}";"${metodo}";"€ ${subTotale.toFixed(2).replace('.', ',')}";"€ ${sconto.toFixed(2).replace('.', ',')}";"€ ${totale.toFixed(2).replace('.', ',')}";"${articoliStr.replace(/"/g, '""')}"\n`;
+            });
+            
+            const bom = "\uFEFF";
+            const blob = new Blob([bom + csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            
+            const fileTimestamp = new Date().toISOString().slice(0,10) + "_" + new Date().toTimeString().slice(0,5).replace(/:/g,"-");
+            a.href = url;
+            a.download = `Registro_Cassa_Excel_${fileTimestamp}.csv`;
+            a.click();
+            URL.revokeObjectURL(url);
+            
+            if(typeof showToast === 'function') showToast("Foglio Excel (CSV) generato con simboli € ed esportato!", "success");
+        }
+
+        // Intercettazione sovrascrittura ed upgrade della singola chiusura storica serale Z
+        window.esportaSingolaChiusuraCSV = function(e, idx) {
+            if(e) e.stopPropagation();
+            if (typeof storicoChiusure === 'undefined' || !storicoChiusure[idx]) return;
+            const z = storicoChiusure[idx];
+            
+            let csv = "========================================================\n";
+            csv += "📊 SMARTCASSA PRO - REPORT CHIUSURA SERALE Z\n";
+            csv += "========================================================\n";
+            csv += `Data Chiusura;${new Date(z.data).toLocaleString('it-IT')}\n\n`;
+            
+            if (z.vendite && z.vendite.length > 0) {
+                csv += "=== SEZIONE 1: VENDITE ARTICOLI ===\n";
+                csv += "Articolo;Quantita Venduta;Incasso Totale\n";
+                z.vendite.forEach(v => {
+                    csv += `"${v.nome.replace(/"/g, '""')}";${v.qta};"€ ${v.incasso.toFixed(2).replace('.', ',')}"\n`;
+                });
+                
+                csv += "\n=== SEZIONE 2: RIEPILOGO FINANZIARIO SERALE ===\n";
+                csv += `"Pezzi totali venduti";"${z.totPezzi || 0}"\n`;
+                csv += `"Totale Netto Contanti";"€ ${(z.contanti || 0).toFixed(2).replace('.', ',')}"\n`;
+                csv += `"Totale Netto POS";"€ ${(z.pos || 0).toFixed(2).replace('.', ',')}"\n`;
+                csv += `"🏆 INCASSO COMPLESSIVO CHIUSURA";"€ ${(z.totale || 0).toFixed(2).replace('.', ',')}"\n`;
+            } else {
+                csv += "Dato;Valore\n";
+                if(z.dettaglioText) {
+                    const lines = z.dettaglioText.split('\n');
+                    lines.forEach(l => {
+                        if(l.includes(':')) {
+                            const parts = l.split(':');
+                            csv += `"${parts[0].trim()}";"${parts.slice(1).join(':').trim()}"\n`;
+                        } else {
+                            csv += `"${l.trim()}"\n`;
+                        }
+                    });
+                }
+            }
+            
+            const bom = "\uFEFF";
+            const blob = new Blob([bom + csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            
+            const fileTimestamp = new Date(z.data).toISOString().slice(0,10) + "_" + new Date(z.data).toTimeString().slice(0,5).replace(/:/g,"-");
+            a.href = url;
+            a.download = `Chiusura_Z_${fileTimestamp}.csv`;
+            a.click();
+            URL.revokeObjectURL(url);
+            
+            if(typeof showToast === 'function') showToast("Report Chiusura Z esportato con simboli €!", "success");
+        };
+
+        /* ==========================================================================
+           8. STAMPE REPARTI E GESTIONE DINAMICA CATEGORIE
+           ========================================================================== */
+        function avviaStampa(reparto) {
+            const blocco = document.getElementById('blocco-stampa');
+            const tavolo = document.getElementById('num-tavolo').value.trim();
+            const intestazione = document.getElementById('intestazione-ricevuta').value.trim();
+            const calc = calcolaValoriComanda();
+            
+            let html = '';
+            if(reparto === 'CLIENTE' && intestazione) {
+                html += `<div style="text-align:center; font-weight:800; font-size:12pt; margin-bottom:4px; font-family: inherit;">${esc(intestazione.toUpperCase())}</div>`;
+            }
+            
+            html += `<div class="stampa-titolo">${reparto === 'CLIENTE' ? 'RICEVUTA' : 'REPARTO '+reparto}</div>`;
+            html += `<div class="stampa-subtitolo">${reparto === 'CLIENTE' ? 'Ricevuta non valida ai fini fiscali' : 'Comanda Interna'}</div>`;
+            
+            if (tavolo) {
+                if (reparto === 'CUCINA' || reparto === 'BAR') {
+                    html += `<div class="stampa-tavolo-reparto">TAVOLO/CLIENTE: ${esc(tavolo)}</div>`;
+                    html += `<div style="margin-bottom: 12px; font-size: 10pt;"><b>Data:</b> ${new Date().toLocaleString('it-IT')}</div>`;
+                } else {
+                    html += `<div style="margin-bottom: 12px; font-size: 10pt;"><b>TAVOLO/CLIENTE:</b> ${esc(tavolo)}<br><b>Data:</b> ${new Date().toLocaleString('it-IT')}</div>`;
+                }
+            } else {
+                html += `<div style="margin-bottom: 12px; font-size: 10pt;"><b>Data:</b> ${new Date().toLocaleString('it-IT')}</div>`;
+            }
+
+            html += `<table class="stampa-tabella">`;
+            
+            let contaArticoliStampati = 0;
+            comandaAttuale.forEach(i => {
+                const prodMenu = databaseMenu.find(m => m.id === i.id) || {};
+                const cat = (prodMenu.categoria || "").toLowerCase().trim();
+                let ok = false;
+                
+                let currentReparto = configCategorie[prodMenu.categoria]?.repartoStampa;
+                if (!currentReparto) {
+                    if (['bevande', 'caffetteria e amari', 'cocktail', 'gelati'].includes(cat)) {
+                        currentReparto = 'BAR';
+                    } else if (['piadine', 'panini', 'piatti'].includes(cat)) {
+                        currentReparto = 'CUCINA';
+                    } else {
+                        currentReparto = 'NESSUNO';
+                    }
+                }
+                
+                if (reparto === 'CLIENTE' || currentReparto === reparto) {
+                    ok = true;
+                }
+                
+                if (ok) {
+                    contaArticoliStampati++;
+                    html += `<tr><td><b>${i.quantita}x</b> ${esc(i.nome)}${i.variazione ? `<br><small style="margin-left:8px;">* ${esc(i.variazione)}</small>` : ''}</td><td style="text-align:right; vertical-align:top;">${reparto === 'CLIENTE' ? formattaEuro(i.prezzo * i.quantita) : ''}</td></tr>`;
+                }
+            });
+            html += `</table>`;
+            
+            if(contaArticoliStampati === 0) {
+                showToast(`Nessun articolo in comanda appartiene al reparto ${reparto}.`, "error");
+                return; 
+            }
+            
+            if(reparto === 'CLIENTE') {
+                if(calc.detrazione > 0) {
+                    html += `<div style="text-align:right; font-size: 10pt; margin-top:8px;">Subtotale: ${formattaEuro(calc.lordo)}</div>`;
+                    html += `<div style="text-align:right; font-size: 10pt; color:red;">Sconto: -${formattaEuro(calc.detrazione)}</div>`;
+                }
+                html += `<div class="stampa-totale">TOTALE: ${formattaEuro(calc.finalDaPagare)}</div>`;
+            }
+            
+            blocco.innerHTML = html;
+            gestisciStampaOAnteprima();
+        }
+
+        function aggiornaElencoCategorieAdmin() {
+            const tb = document.getElementById('lista-controllo-categorie');
+            const sel = document.getElementById('nuova-categoria');
+            if(!tb || !sel) return;
+            tb.innerHTML = ''; sel.innerHTML = '';
+            
+            elencoCategorie.forEach((c, i) => {
+                const visualizzazioneNome = c.charAt(0).toUpperCase() + c.slice(1);
+                const currentIcon = configCategorie[c]?.icon || getEmojiPerCategoria(c);
+                const currentColor = configCategorie[c]?.color || paletteColori[i % paletteColori.length];
+                
+                let currentReparto = configCategorie[c]?.repartoStampa;
+                if (!currentReparto) {
+                    if (['bevande', 'caffetteria e amari', 'cocktail', 'gelati'].includes(c.toLowerCase())) currentReparto = 'BAR';
+                    else if (['piadine', 'panini', 'piatti'].includes(c.toLowerCase())) currentReparto = 'CUCINA';
+                    else currentReparto = 'NESSUNO';
+                }
+                
+                tb.innerHTML += `<tr>
+                    <td>
+                        <button class="btn-mini-azione" onclick="spostaCategoria(${i},-1)">▲</button>
+                        <button class="btn-mini-azione" onclick="spostaCategoria(${i},1)">▼</button>
+                    </td>
+                    <td><b>${esc(visualizzazioneNome)}</b></td>
+                    <td>
+                        <div style="display: flex; gap: 0.35rem; align-items: center;">
+                            <input type="text" value="${esc(currentIcon)}" onchange="aggiornaConfigCategoria(${esc(JSON.stringify(c))}, 'icon', this.value)" style="width: 45px; text-align: center; padding: 0.25rem; font-size: 0.85rem; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface); color: var(--text-main);" title="Emoji/Icona">
+                            <input type="color" value="${currentColor}" onchange="aggiornaConfigCategoria(${esc(JSON.stringify(c))}, 'color', this.value)" style="width: 40px; height: 28px; padding: 0; border: 1px solid var(--border); border-radius: var(--radius-sm); cursor: pointer; background: transparent;" title="Colore Bordo">
+                            <select onchange="aggiornaConfigCategoria(${esc(JSON.stringify(c))}, 'repartoStampa', this.value)" style="padding: 0.25rem; font-size: 0.85rem; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface); color: var(--text-main); font-weight: 500;">
+                                <option value="NESSUNO" ${currentReparto === 'NESSUNO' ? 'selected' : ''}>Solo Ricevuta</option>
+                                <option value="CUCINA" ${currentReparto === 'CUCINA' ? 'selected' : ''}>📋 Cucina</option>
+                                <option value="BAR" ${currentReparto === 'BAR' ? 'selected' : ''}>☕ Bar</option>
+                            </select>
+                        </div>
+                    </td>
+                    <td style="text-align:right; display:flex; gap:0.25rem; justify-content:flex-end; align-items:center;">
+                        <button class="btn-mini-azione btn-mini-modifica" onclick="avviaModificaCategoria(${esc(JSON.stringify(c))})">Modifica</button>
+                        <button class="btn-mini-azione" style="background:#ef4444; color:white; font-weight:bold; border:none;" onclick="eliminaCategoriaAdmin(${esc(JSON.stringify(c))})">🗑️</button>
+                    </td>
+                </tr>`;
+                sel.innerHTML += `<option value="${esc(c)}">${esc(visualizzazioneNome)}</option>`;
+            });
+        }
+    </script>
+</body>
+</html>

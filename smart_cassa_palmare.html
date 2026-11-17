@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SmartCassa Pro - Terminale Palmare</title>
+    
+    <link rel="manifest" href="manifest.json">
+    
+    <link rel="icon" type="image/png" sizes="32x32" href="https://cdn-icons-png.flaticon.com/512/4357/4357325.png?v=2">
+    <link rel="icon" type="image/png" sizes="192x192" href="https://cdn-icons-png.flaticon.com/512/4357/4357325.png?v=2">
+    <link rel="shortcut icon" href="https://cdn-icons-png.flaticon.com/512/4357/4357325.png?v=2">
+
+    <link rel="apple-touch-icon" sizes="180x180" href="https://cdn-icons-png.flaticon.com/512/4357/4357325.png?v=2">
+    
+    <meta name="theme-color" content="#0f172a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="mobile-web-app-capable" content="yes">
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/mqtt@5.10.1/dist/mqtt.min.js"></script>
+    
+    <style>
+        :root {
+            --bg-main: #f8fafc;
+            --surface: #ffffff;
+            --border: #e2e8f0;
+            --border-hover: #cbd5e1;
+            --text-main: #0f172a;
+            --text-muted: #475569;
+            --text-light: #94a3b8;
+            --input-bg: #f8fafc;
+            
+            --primary: #3b82f6;
+            --primary-hover: #2563eb;
+            --success: #10b981;
+            --success-dim: #ecfdf5;
+            --warning: #f59e0b;
+            --warning-dim: #fffbeb;
+            --danger: #ef4444;
+            --danger-dim: #fef2f2;
+            
+            --radius-lg: 16px;
+            --radius-md: 10px;
+            --radius-sm: 6px;
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        body.dark-mode {
+            --bg-main: #0f172a;
+            --surface: #1e293b;
+            --border: #334155;
+            --border-hover: #475569;
+            --text-main: #f8fafc;
+            --text-muted: #cbd5e1;
+            --text-light: #64748b;
+            --input-bg: #0f172a;
+            --primary: #3b82f6;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; letter-spacing: -0.01em; -webkit-tap-highlight-color: transparent; }
+        body { background-color: var(--bg-main); color: var(--text-main); display: flex; flex-direction: column; min-height: 100vh; -webkit-font-smoothing: antialiased; transition: background-color 0.3s, color 0.3s; }
+
+        header { background: var(--surface); padding: 0.6rem 1rem; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); box-shadow: var(--shadow-sm); position: sticky; top: 0; z-index: 100; transition: background-color 0.3s, border-color 0.3s; }
+        .brand { display: flex; align-items: center; gap: 6px; }
+        .brand h1 { font-size: 1rem; font-weight: 800; }
+        .brand span { background: var(--warning-dim); color: var(--warning); padding: 0.15rem 0.4rem; border-radius: var(--radius-sm); font-size: 0.6rem; font-weight: 700; }
+        
+        .header-tools { display: flex; align-items: center; gap: 8px; }
+        .header-btn { background: var(--border); border: none; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.95rem; cursor: pointer; color: var(--text-main); transition: background-color 0.2s; }
+        .header-btn:active { background: var(--border-hover); }
+        
+        .stato-rete { font-size: 0.7rem; font-weight: 700; padding: 0.35rem 0.6rem; border-radius: 20px; background: var(--border); color: var(--text-muted); display: flex; align-items: center; gap: 4px; transition: background-color 0.3s; }
+        .stato-rete.online { background: var(--success-dim); color: var(--success); }
+        .stato-rete .pallino { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+
+        .config-panel-hidden { display: none; background: var(--surface); border-bottom: 1px solid var(--border); padding: 0.75rem 1rem; flex-direction: column; gap: 0.4rem; animation: slideDown 0.2s ease-out; }
+        .config-panel-hidden label { font-size: 0.7rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; }
+        .config-panel-hidden input { width: 100%; padding: 0.5rem; font-size: 0.85rem; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--input-bg); color: var(--text-main); font-weight: 600; text-align: center; }
+
+        .main-layout { display: flex; flex-direction: column; flex: 1; padding-bottom: 75px; }
+
+        .top-inputs { padding: 0.75rem 1rem; background: var(--surface); display: flex; flex-direction: column; gap: 0.5rem; border-bottom: 1px solid var(--border); }
+        .input-tavolo { width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: var(--radius-md); font-size: 16px; font-weight: 700; background: var(--input-bg); color: var(--text-main); text-align: center; text-transform: uppercase; }
+        .input-tavolo:focus { outline: none; border-color: var(--primary); }
+        
+        .search-container { position: relative; width: 100%; display: flex; align-items: center; }
+        .search-bar { width: 100%; padding: 0.6rem 2rem 0.6rem 0.8rem; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 0.85rem; background: var(--bg-main); color: var(--text-main); }
+        .search-bar:focus { outline: none; border-color: var(--primary); }
+        .btn-clear-search { position: absolute; right: 10px; background: transparent; border: none; color: var(--text-light); font-size: 1rem; cursor: pointer; display: none; padding: 2px; }
+
+        .barra-filtri-banco { display: flex; gap: 0.5rem; overflow-x: auto; padding: 0.6rem 1rem; background: var(--bg-main); border-bottom: 1px solid var(--border); white-space: nowrap; }
+        .barra-filtri-banco::-webkit-scrollbar { display: none; }
+        .tab-filtro { padding: 0.5rem 0.9rem; border: 1px solid var(--border); background: var(--surface); border-radius: var(--radius-sm); font-size: 0.85rem; font-weight: 700; color: var(--text-muted); cursor: pointer; display: inline-block; transition: all 0.2s; }
+        .tab-filtro.active { background: var(--text-main); color: var(--surface); border-color: var(--text-main); }
+
+        .grid-prodotti { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 0.6rem; padding: 1rem; }
+        .card-prodotto { border: 1px solid var(--border); border-radius: var(--radius-md); padding: 0.8rem; display: flex; flex-direction: column; justify-content: space-between; background: var(--surface); min-height: 95px; position: relative; user-select: none; transition: transform 0.1s, box-shadow 0.1s; }
+        .card-prodotto:active { transform: scale(0.95); background: var(--input-bg); }
+        .card-icon { font-size: 1.4rem; margin-bottom: 0.3rem; }
+        .nome-prodotto { font-weight: 700; font-size: 0.82rem; line-height: 1.25; color: var(--text-main); }
+        .prezzo-prodotto { font-weight: 800; font-size: 0.9rem; color: var(--text-main); text-align: right; margin-top: auto; padding-top: 5px; }
+        
+        .badge-qta { position: absolute; top: -6px; right: -6px; background: var(--primary); color: white; width: 22px; height: 22px; border-radius: 50%; font-size: 0.75rem; font-weight: 800; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 4px rgba(0,0,0,0.2); animation: pop 0.2s ease-out; }
+        @keyframes pop { 0% { transform: scale(0); } 100% { transform: scale(1); } }
+
+        .comanda-screen { display: none; padding: 1rem; flex-direction: column; flex: 1; background: var(--surface); }
+        .comanda-screen.active { display: flex; }
+        .header-comanda { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 1px dashed var(--border); }
+        .btn-svuota { background: var(--danger-dim); color: var(--danger); border: none; padding: 0.4rem 0.8rem; border-radius: var(--radius-sm); font-size: 0.75rem; font-weight: 700; cursor: pointer; }
+        
+        .lista-comanda { list-style: none; overflow-y: auto; flex: 1; margin-bottom: 1rem; }
+        .comanda-vuota-stato { display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--text-light); font-size: 0.85rem; padding: 4rem 1rem; text-align: center; gap: 0.5rem; }
+        
+        .item-comanda { display: flex; flex-direction: column; padding: 0.75rem 0; border-bottom: 1px solid var(--border); }
+        .item-riga-alta { display: flex; justify-content: space-between; align-items: center; }
+        .info-articolo-nome { font-weight: 600; font-size: 0.88rem; }
+        .info-articolo-nome strong { color: var(--primary); margin-right: 0.3rem; }
+        .item-prezzo { font-weight: 700; font-size: 0.85rem; color: var(--text-muted); margin-right: 0.5rem; }
+        
+        .controlli-qta { display: flex; align-items: center; gap: 0.4rem; background: var(--bg-main); padding: 0.2rem; border-radius: var(--radius-sm); border: 1px solid var(--border); }
+        .btn-modifica { background: var(--surface); border: 1px solid var(--border); width: 32px; height: 32px; border-radius: var(--radius-sm); font-weight: 700; font-size: 1.1rem; display: flex; align-items: center; justify-content: center; color: var(--text-main); cursor: pointer; }
+        .btn-modifica:active { background: var(--border); }
+
+        .nota-variazione { color: var(--text-muted); font-size: 0.75rem; font-weight: 600; margin-top: 0.4rem; background: var(--input-bg); padding: 0.4rem 0.6rem; border-radius: var(--radius-sm); border: 1px solid var(--border); width: fit-content; display: inline-flex; align-items: center; gap: 4px; cursor: pointer; }
+
+        .totale-box-mobile { padding: 1rem 0; border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; }
+        .totale-box-mobile span { font-weight: 700; font-size: 0.85rem; color: var(--text-muted); }
+        .totale-box-mobile .prezzo { font-size: 1.5rem; font-weight: 800; color: var(--text-main); }
+
+        .btn-invia-comanda { width: 100%; border: none; padding: 0.9rem; border-radius: var(--radius-md); font-size: 1rem; font-weight: 700; background: var(--success); color: white; display: flex; justify-content: center; align-items: center; gap: 0.5rem; box-shadow: var(--shadow-md); cursor: pointer; transition: opacity 0.2s, transform 0.1s; }
+        .btn-invia-comanda:active:not(:disabled) { transform: translateY(2px); }
+        .btn-invia-comanda:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .mobile-cassa-bar { position: fixed; bottom: 0; left: 0; width: 100%; background: var(--surface); border-top: 1px solid var(--border); z-index: 101; box-shadow: 0 -4px 12px rgba(0,0,0,0.05); display: flex; transition: background-color 0.3s; }
+        .mobile-sub-btn { flex: 1; padding: 1rem; border: none; background: transparent; color: var(--text-muted); font-weight: 700; font-size: 0.9rem; display: flex; align-items: center; justify-content: center; gap: 0.5rem; cursor: pointer; transition: color 0.2s, background-color 0.2s; }
+        .mobile-sub-btn.active { color: var(--primary); border-top: 3px solid var(--primary); }
+
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(2px); display: none; align-items: center; justify-content: center; z-index: 1000; }
+        .modal-overlay.active { display: flex; }
+        .modal-box { background: var(--surface); padding: 1.25rem; border-radius: var(--radius-lg); width: 90%; max-width: 340px; border: 1px solid var(--border); box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+        .modal-box h3 { font-size: 1.05rem; font-weight: 800; margin-bottom: 0.75rem; }
+        .modal-box input { width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 16px; margin-bottom: 1rem; background: var(--input-bg); color: var(--text-main); }
+        .modal-actions { display: flex; gap: 0.5rem; justify-content: flex-end; }
+        .btn-modal { padding: 0.6rem 1.2rem; border-radius: var(--radius-sm); font-weight: 700; font-size: 0.85rem; border: none; cursor: pointer; }
+        .btn-modal.cancel { background: var(--bg-main); color: var(--text-muted); }
+        .btn-modal.confirm { background: var(--text-main); color: var(--surface); }
+
+        #toast-container { position: fixed; top: 12px; left: 12px; right: 12px; display: flex; flex-direction: column; gap: 8px; z-index: 9999; }
+        .toast.error { background: #b91c1c; }
+        .toast.success { background: #047857; }
+        .banner-invio { display:none; background: var(--warning-dim); color: var(--warning); border-bottom: 1px solid var(--border); padding: 0.55rem 1rem; font-size: 0.8rem; font-weight: 700; justify-content: space-between; align-items: center; gap: 8px; }
+        .banner-invio button { background: var(--warning); color: #fff; border: none; border-radius: var(--radius-sm); padding: 0.35rem 0.7rem; font-weight: 700; cursor: pointer; }
+        .toast { padding: 0.85rem 1rem; border-radius: var(--radius-md); font-weight: 600; font-size: 0.85rem; color: white; background: #0f172a; text-align: center; box-shadow: var(--shadow-md); animation: slideDown 0.3s ease-out; }
+        @keyframes slideDown { from { transform: translateY(-20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+        #view-prodotti-container { display: flex; flex-direction: column; flex: 1; }
+        #view-prodotti-container.hidden { display: none; }
+    </style>
+</head>
+<body>
+
+    <div id="toast-container"></div>
+
+    <header>
+        <div class="brand">
+            <h1>SmartCassa <span>PALMARE</span></h1>
+        </div>
+        <div class="header-tools">
+            <button class="header-btn" onclick="toggleConfigPanel()" title="Impostazioni Hotspot">⚙️</button>
+            <button class="header-btn" onclick="toggleTheme()" title="Cambia Tema">🌓</button>
+            <div class="stato-rete" id="rete-status">
+                <span class="pallino"></span> <span id="rete-testo">Offline</span>
+            </div>
+        </div>
+    </header>
+
+    <div class="config-panel-hidden" id="panel-impostazioni-rete">
+        <label for="chiave-rete-id">Codice rete (copialo dalle impostazioni della Cassa):</label>
+        <input type="text" id="chiave-rete-id" value="" placeholder="Codice mostrato sulla cassa" autocapitalize="off" autocomplete="off" onchange="salvaEConnettiReteMqtt()">
+    </div>
+
+    <div class="banner-invio" id="banner-invio"><span id="banner-invio-testo"></span><button onclick="reinviaOrdiniNonConfermati(true)">Riprova ora</button></div>
+
+    <div class="main-layout">
+        <div id="view-prodotti-container">
+            <div class="top-inputs">
+                <input type="text" id="num-tavolo-palmare" class="input-tavolo" placeholder="TAVOLO / NOME" autocomplete="off">
+                <div class="search-container">
+                    <input type="text" id="search-prodotti" class="search-bar" placeholder="🔍 Cerca nel menu..." oninput="ricercaProdotti()">
+                    <button id="btn-clear-search" class="btn-clear-search" onclick="svuotaFiltroRicerca()">✕</button>
+                </div>
+            </div>
+
+            <div class="barra-filtri-banco" id="tabs-banco-palmare"></div>
+            <div class="grid-prodotti" id="griglia-prodotti-palmare"></div>
+        </div>
+
+        <div id="view-comanda-container" class="comanda-screen">
+            <div class="header-comanda">
+                <span style="font-weight:800; font-size:1.1rem;">Riepilogo Ordine</span>
+                <button class="btn-svuota" onclick="svuotaComanda()">🗑️ Svuota</button>
+            </div>
+            
+            <ul class="lista-comanda" id="corpo-comanda-palmare"></ul>
+
+            <div class="totale-box-mobile">
+                <span>TOTALE STIMATO</span>
+                <span class="prezzo" id="totale-comanda-palmare">0,00 €</span>
+            </div>
+
+            <button class="btn-invia-comanda" id="btn-invia-cassa" onclick="spedisciOrdineACassa()" disabled>
+                📡 INVIA ALLA CASSA
+            </button>
+        </div>
+    </div>
+
+    <div class="mobile-cassa-bar">
+        <button id="btn-nav-prod" class="mobile-sub-btn active" onclick="switchSchermataMobile('menu')">🍽️ Prodotti</button>
+        <button id="btn-nav-com" class="mobile-sub-btn" onclick="switchSchermataMobile('comanda')">
+            🛒 Ordine <span id="badge-totale-palmare" style="background:var(--danger); color:white; padding:2px 7px; border-radius:12px; font-size:0.75rem; margin-left:4px; display:none; font-weight:800;">0</span>
+        </button>
+    </div>
+
+    <div class="modal-overlay" id="modal-nota-palmare">
+        <div class="modal-box">
+            <h3>✏️ Nota Variante</h3>
+            <input type="text" id="input-nota-palmare" placeholder="Es: Senza cipolla, Ben cotto..." autocomplete="off">
+            <div class="modal-actions">
+                <button class="btn-modal cancel" onclick="chiudiModalNotaPalmare()">Annulla</button>
+                <button class="btn-modal confirm" onclick="salvaModalNotaPalmare()">Salva</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let elencoCategorie = [];
+        let databaseMenu = [];
+        let configCategorie = {};
+        const emojiMappa = { 'piadine':'🥙', 'panini':'🍔', 'piatti':'🍝', 'bevande':'🥤', 'caffetteria e amari':'☕', 'cocktail':'🍹', 'gelati':'🍦' };
+
+        let comandaPalmare = [];
+        let categoriaSelezionata = "";
+        let indexNotaAttiva = null;
+        let clientMqtt = null;
+        let termineRicerca = "";
+        let stanzaAttiva = "";
+        let ordiniNonConfermati = {};   // oid -> pacchetto: restano finché la cassa non conferma
+
+        const formattaEuro = (val) => new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(val);
+        const esc = (v) => String(v ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+        const pulisci = (v, max) => String(v ?? '').replace(/[\u0000-\u001F\u007F]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, max);
+        const salvaLocale = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} };
+        const leggiLocale = (k, def) => { try { const x = JSON.parse(localStorage.getItem(k)); return x ?? def; } catch (e) { return def; } };
+        const nuovoOid = () => 'P' + Date.now().toString(36) + Array.from(crypto.getRandomValues(new Uint8Array(4))).map(b => b.toString(16).padStart(2, '0')).join('');
+
+        function triggerVibration() { if (navigator.vibrate) navigator.vibrate(25); }
+        function toggleTheme() { document.body.classList.toggle('dark-mode'); localStorage.setItem('smartcassa_dark', document.body.classList.contains('dark-mode')); triggerVibration(); }
+
+        function toggleConfigPanel() {
+            triggerVibration();
+            const panel = document.getElementById('panel-impostazioni-rete');
+            if (panel.style.display === "flex") { panel.style.display = "none"; }
+            else { panel.style.display = "flex"; document.getElementById('chiave-rete-id').focus(); }
+        }
+
+        function switchSchermataMobile(vista) {
+            triggerVibration();
+            const vp = document.getElementById('view-prodotti-container');
+            const vc = document.getElementById('view-comanda-container');
+            const btnP = document.getElementById('btn-nav-prod');
+            const btnC = document.getElementById('btn-nav-com');
+            if (vista === 'menu') {
+                vp.classList.remove('hidden'); vc.classList.remove('active');
+                btnP.classList.add('active'); btnC.classList.remove('active');
+                disegnaGrigliaProdotti();
+            } else {
+                vp.classList.add('hidden'); vc.classList.add('active');
+                btnC.classList.add('active'); btnP.classList.remove('active');
+                aggiornaInterfacciaComandaPalmare();
+            }
+            aggiornaBadgeNavigazione();
+        }
+
+        function ottieniEmojiCat(cat) {
+            if (configCategorie[cat] && configCategorie[cat].icon) return configCategorie[cat].icon;
+            return emojiMappa[String(cat).toLowerCase()] || '🍽️';
+        }
+
+        function disegnaTabsFiltri() {
+            const cont = document.getElementById('tabs-banco-palmare');
+            if (elencoCategorie.length === 0) {
+                cont.innerHTML = '<div style="padding:1rem; font-size:0.85rem; color:var(--text-muted)">In attesa di sincronizzazione con la cassa...</div>';
+                return;
+            }
+            if (!categoriaSelezionata || !elencoCategorie.includes(categoriaSelezionata)) categoriaSelezionata = elencoCategorie[0];
+            cont.innerHTML = elencoCategorie.map(cat => `
+                <button class="tab-filtro ${categoriaSelezionata === cat ? 'active' : ''}" onclick="cambiaCategoria(${esc(JSON.stringify(cat))})">
+                    ${esc(ottieniEmojiCat(cat))} ${esc(cat.charAt(0).toUpperCase() + cat.slice(1))}
+                </button>`).join('');
+        }
+
+        function cambiaCategoria(cat) {
+            triggerVibration();
+            categoriaSelezionata = cat;
+            svuotaFiltroRicercaSenzaDisegnare();
+            disegnaTabsFiltri();
+            disegnaGrigliaProdotti();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function ricercaProdotti() {
+            termineRicerca = document.getElementById('search-prodotti').value.toLowerCase().trim();
+            document.getElementById('btn-clear-search').style.display = termineRicerca ? 'block' : 'none';
+            disegnaGrigliaProdotti();
+        }
+        function svuotaFiltroRicerca() { svuotaFiltroRicercaSenzaDisegnare(); disegnaGrigliaProdotti(); }
+        function svuotaFiltroRicercaSenzaDisegnare() {
+            document.getElementById('search-prodotti').value = "";
+            document.getElementById('btn-clear-search').style.display = 'none';
+            termineRicerca = "";
+        }
+
+        function ottieniQuantitaInComanda(id) {
+            return comandaPalmare.filter(item => item.id === id).reduce((acc, curr) => acc + curr.quantita, 0);
+        }
+
+        function disegnaGrigliaProdotti() {
+            const grid = document.getElementById('griglia-prodotti-palmare');
+            if (databaseMenu.length === 0) {
+                grid.innerHTML = '<div style="padding:1rem; color:var(--text-light); text-align:center; width:100%; grid-column: 1 / -1;">Menu vuoto. Controlla il codice rete e aspetta che la Cassa invii i dati.</div>';
+                return;
+            }
+            const filtrati = databaseMenu.filter(p => {
+                if (p.attivo === false) return false;
+                if (termineRicerca) return String(p.nome).toLowerCase().includes(termineRicerca);
+                return p.categoria === categoriaSelezionata;
+            });
+            if (filtrati.length === 0) {
+                grid.innerHTML = '<div style="padding:1rem; color:var(--text-light); text-align:center; grid-column: 1 / -1;">Nessun prodotto.</div>';
+                return;
+            }
+            grid.innerHTML = filtrati.map(p => {
+                const qta = ottieniQuantitaInComanda(p.id);
+                const badge = qta > 0 ? `<div class="badge-qta">${qta}</div>` : '';
+                return `
+                    <div class="card-prodotto" onclick="aggiungiProdotto(${Number(p.id)})">
+                        ${badge}
+                        <span class="card-icon">${esc(ottieniEmojiCat(p.categoria))}</span>
+                        <div class="nome-prodotto">${esc(p.nome)}</div>
+                        <div class="prezzo-prodotto">${formattaEuro(p.prezzo)}</div>
+                    </div>`;
+            }).join('');
+        }
+
+        function salvaCarrello() { salvaLocale('smartcassa_carrello', { tavolo: document.getElementById('num-tavolo-palmare').value, righe: comandaPalmare }); }
+
+        function aggiungiProdotto(id) {
+            triggerVibration();
+            const p = databaseMenu.find(m => m.id === id);
+            if (!p) return;
+            const esistente = comandaPalmare.find(item => item.id === id && !item.variazione);
+            if (esistente) { if (esistente.quantita < 99) esistente.quantita++; }
+            else comandaPalmare.push({ id: p.id, nome: p.nome, prezzo: p.prezzo, quantita: 1, variazione: "" });
+            salvaCarrello();
+            disegnaGrigliaProdotti();
+            aggiornaBadgeNavigazione();
+            showToast(`+1 ${p.nome}`);
+        }
+
+        function cambiaQuantitaItem(idx, variaz) {
+            triggerVibration();
+            if (!comandaPalmare[idx]) return;
+            comandaPalmare[idx].quantita = Math.min(99, comandaPalmare[idx].quantita + variaz);
+            if (comandaPalmare[idx].quantita <= 0) comandaPalmare.splice(idx, 1);
+            salvaCarrello();
+            aggiornaInterfacciaComandaPalmare();
+            aggiornaBadgeNavigazione();
+        }
+
+        function svuotaComanda() {
+            if (comandaPalmare.length === 0) return;
+            if (confirm("Vuoi cancellare l'ordine corrente?")) {
+                comandaPalmare = [];
+                salvaCarrello();
+                aggiornaInterfacciaComandaPalmare();
+                aggiornaBadgeNavigazione();
+                disegnaGrigliaProdotti();
+                showToast("Ordine svuotato.");
+            }
+        }
+
+        function aggiornaBadgeNavigazione() {
+            const totalePezzi = comandaPalmare.reduce((acc, curr) => acc + curr.quantita, 0);
+            const badge = document.getElementById('badge-totale-palmare');
+            badge.style.display = totalePezzi > 0 ? 'inline-block' : 'none';
+            badge.innerText = totalePezzi;
+        }
+
+        function aggiornaInterfacciaComandaPalmare() {
+            const corpo = document.getElementById('corpo-comanda-palmare');
+            const totale = comandaPalmare.reduce((acc, curr) => acc + Math.round(curr.prezzo * curr.quantita * 100), 0) / 100;
+            document.getElementById('totale-comanda-palmare').innerText = formattaEuro(totale);
+            document.getElementById('btn-invia-cassa').disabled = comandaPalmare.length === 0;
+            if (comandaPalmare.length === 0) {
+                corpo.innerHTML = `<div class="comanda-vuota-stato"><span style="font-size:2rem">🧾</span>Carrello vuoto. Seleziona i prodotti.</div>`;
+                return;
+            }
+            corpo.innerHTML = comandaPalmare.map((item, idx) => `
+                <li class="item-comanda">
+                    <div class="item-riga-alta">
+                        <div class="info-articolo-nome"><strong>${item.quantita}x</strong> ${esc(item.nome)}</div>
+                        <div style="display:flex; align-items:center;">
+                            <span class="item-prezzo">${formattaEuro(item.prezzo * item.quantita)}</span>
+                            <div class="controlli-qta">
+                                <button class="btn-modifica" onclick="cambiaQuantitaItem(${idx}, -1)">-</button>
+                                <button class="btn-modifica" onclick="cambiaQuantitaItem(${idx}, 1)">+</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="nota-variazione" onclick="apriModalNotaPalmare(${idx})">
+                        ${item.variazione ? `✏️ ${esc(item.variazione)}` : "➕ Nota / Variante"}
+                    </div>
+                </li>`).join('');
+        }
+
+        function apriModalNotaPalmare(idx) {
+            indexNotaAttiva = idx;
+            document.getElementById('input-nota-palmare').value = comandaPalmare[idx].variazione || '';
+            document.getElementById('modal-nota-palmare').classList.add('active');
+            setTimeout(() => document.getElementById('input-nota-palmare').focus(), 150);
+        }
+        function chiudiModalNotaPalmare() { document.getElementById('modal-nota-palmare').classList.remove('active'); indexNotaAttiva = null; }
+        function salvaModalNotaPalmare() {
+            if (indexNotaAttiva !== null && comandaPalmare[indexNotaAttiva]) {
+                comandaPalmare[indexNotaAttiva].variazione = pulisci(document.getElementById('input-nota-palmare').value, 80);
+                salvaCarrello();
+                aggiornaInterfacciaComandaPalmare();
+            }
+            chiudiModalNotaPalmare();
+        }
+
+        // ---------------- RETE ----------------
+        function impostaStato(classe, testo) {
+            const box = document.getElementById('rete-status');
+            box.className = "stato-rete" + (classe ? " " + classe : "");
+            document.getElementById('rete-testo').innerText = testo;
+        }
+
+        function aggiornaBannerInvio() {
+            const n = Object.keys(ordiniNonConfermati).length;
+            const banner = document.getElementById('banner-invio');
+            banner.style.display = n > 0 ? 'flex' : 'none';
+            document.getElementById('banner-invio-testo').innerText = n === 1 ? '⏳ 1 ordine in attesa di conferma dalla cassa' : `⏳ ${n} ordini in attesa di conferma dalla cassa`;
+        }
+
+        function reinviaOrdiniNonConfermati(manuale = false) {
+            if (!clientMqtt || !clientMqtt.connected) { if (manuale) showToast("Non connesso alla rete: riprovo appena torna.", "error"); return; }
+            Object.values(ordiniNonConfermati).forEach(p => {
+                clientMqtt.publish(`smartcassa/comande/${stanzaAttiva}`, JSON.stringify(p), { qos: 1 });
+            });
+        }
+
+        function salvaEConnettiReteMqtt() {
+            const stanzaId = document.getElementById('chiave-rete-id').value.trim();
+            if (!stanzaId) { impostaStato('', 'Codice mancante'); toggleConfigPanelSeChiuso(); return; }
+            localStorage.setItem('smartcassa_hotspot_id', stanzaId);
+            stanzaAttiva = stanzaId;
+            if (clientMqtt) clientMqtt.end(true);
+            if (typeof mqtt === 'undefined') { impostaStato('', 'Libreria assente'); showToast("Libreria di rete non caricata: serve internet al primo avvio.", "error"); return; }
+            impostaStato('', 'Connessione...');
+
+            clientMqtt = mqtt.connect('wss://broker.emqx.io:8084/mqtt', { clientId: 'palm_' + Math.random().toString(16).slice(2, 10), reconnectPeriod: 3000, connectTimeout: 10000, keepalive: 30 });
+            const tMenu = `smartcassa/menu_sync/${stanzaId}`;
+            const tAck = `smartcassa/ack/${stanzaId}/`;
+
+            clientMqtt.on('connect', () => {
+                impostaStato('online', 'Online');
+                document.getElementById('panel-impostazioni-rete').style.display = "none";
+                clientMqtt.subscribe([tMenu, tAck + '+'], { qos: 1 });
+                clientMqtt.publish(`smartcassa/menu_request/${stanzaId}`, JSON.stringify({ azione: "richiesta" }), { qos: 1 });
+                reinviaOrdiniNonConfermati();
+            });
+            clientMqtt.on('reconnect', () => impostaStato('', 'Riconnessione...'));
+            clientMqtt.on('close', () => impostaStato('', 'Offline'));
+            clientMqtt.on('error', () => impostaStato('', 'Errore'));
+
+            clientMqtt.on('message', (topic, message) => {
+                try {
+                    if (topic.startsWith(tAck)) {
+                        const oid = topic.slice(tAck.length);
+                        if (ordiniNonConfermati[oid]) {
+                            delete ordiniNonConfermati[oid];
+                            salvaLocale('smartcassa_non_confermati', ordiniNonConfermati);
+                            aggiornaBannerInvio();
+                            if (navigator.vibrate) navigator.vibrate([80, 40, 80]);
+                            showToast("✔ Comanda ricevuta dalla cassa", "success");
+                        }
+                        return;
+                    }
+                    if (topic !== tMenu || message.length > 500000) return;
+                    const pacchetto = JSON.parse(message.toString());
+                    if (!Array.isArray(pacchetto.prodotti) || !Array.isArray(pacchetto.categorie)) return;
+                    const vecchio = JSON.stringify(databaseMenu);
+                    databaseMenu = pacchetto.prodotti.filter(p => p && Number.isFinite(Number(p.id)) && Number.isFinite(Number(p.prezzo)));
+                    elencoCategorie = pacchetto.categorie.filter(c => typeof c === 'string');
+                    configCategorie = (pacchetto.configCategorie && typeof pacchetto.configCategorie === 'object') ? pacchetto.configCategorie : {};
+                    disegnaTabsFiltri();
+                    disegnaGrigliaProdotti();
+                    if (vecchio !== JSON.stringify(databaseMenu) && vecchio !== "[]") showToast("Menu sincronizzato con la cassa!");
+                } catch (e) { console.error("Errore messaggio remoto", e); }
+            });
+        }
+
+        function toggleConfigPanelSeChiuso() {
+            const panel = document.getElementById('panel-impostazioni-rete');
+            if (panel.style.display !== "flex") toggleConfigPanel();
+        }
+
+        function spedisciOrdineACassa() {
+            if (comandaPalmare.length === 0) return;
+            if (!stanzaAttiva) { showToast("Inserisci prima il codice rete (⚙️).", "error"); toggleConfigPanelSeChiuso(); return; }
+            const tavolo = pulisci(document.getElementById('num-tavolo-palmare').value, 40) || "BANCO";
+            const oid = nuovoOid();
+            const pacchetto = {
+                oid, tavolo, dataEmissione: new Date().toISOString(),
+                articoli: comandaPalmare.map(a => ({ id: a.id, nome: a.nome, quantita: a.quantita, variazione: a.variazione || "" }))
+            };
+            // L'ordine resta "in uscita" finché la cassa non conferma: nessuna comanda si perde se cade la rete
+            ordiniNonConfermati[oid] = pacchetto;
+            salvaLocale('smartcassa_non_confermati', ordiniNonConfermati);
+            comandaPalmare = [];
+            document.getElementById('num-tavolo-palmare').value = '';
+            salvaCarrello();
+            aggiornaBadgeNavigazione();
+            aggiornaBannerInvio();
+            switchSchermataMobile('menu');
+            if (clientMqtt && clientMqtt.connected) { reinviaOrdiniNonConfermati(); showToast("Comanda inviata, attendo conferma…"); }
+            else showToast("Nessuna rete: comanda in coda, parte appena torna la connessione.", "error");
+        }
+
+        function showToast(testo, tipo = "") {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = 'toast ' + tipo;
+            toast.innerText = testo;
+            container.appendChild(toast);
+            setTimeout(() => toast.remove(), 2200);
+        }
+
+        window.onload = () => {
+            if (localStorage.getItem('smartcassa_dark') === 'true') document.body.classList.add('dark-mode');
+            const localStanza = localStorage.getItem('smartcassa_hotspot_id');
+            if (localStanza) document.getElementById('chiave-rete-id').value = localStanza;
+            const c = leggiLocale('smartcassa_carrello', null);
+            if (c && Array.isArray(c.righe)) {
+                comandaPalmare = c.righe.filter(r => r && Number.isFinite(Number(r.id)) && r.quantita > 0);
+                document.getElementById('num-tavolo-palmare').value = c.tavolo || '';
+            }
+            document.getElementById('num-tavolo-palmare').addEventListener('input', salvaCarrello);
+            ordiniNonConfermati = leggiLocale('smartcassa_non_confermati', {});
+            disegnaTabsFiltri();
+            disegnaGrigliaProdotti();
+            aggiornaBadgeNavigazione();
+            aggiornaBannerInvio();
+            salvaEConnettiReteMqtt();
+            setInterval(() => { if (Object.keys(ordiniNonConfermati).length) reinviaOrdiniNonConfermati(); }, 8000);
+            if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').catch(() => {});
+        };
+    </script>
+</body>
+</html>

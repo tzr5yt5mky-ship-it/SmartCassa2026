@@ -1,0 +1,12 @@
+{
+  "name": "SmartCassa Pro",
+  "short_name": "SmartCassa",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
+  "lang": "it",
+  "icons": [
+    { "src": "https://cdn-icons-png.flaticon.com/512/8634/8634075.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}
