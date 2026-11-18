@@ -559,6 +559,19 @@
 </style>
     <script src="https://unpkg.com/mqtt@5.10.1/dist/mqtt.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js"></script>
+    <script>
+    /* Se la libreria non si carica (rete assente o bloccata) il salvataggio passa dal localStorage: così i dati non si perdono */
+    if (typeof window.localforage === 'undefined') {
+        window.localforage = {
+            getItem: k => { try { return Promise.resolve(JSON.parse(localStorage.getItem('lf_' + k) || 'null')); } catch (e) { return Promise.resolve(null); } },
+            setItem: (k, v) => { try { localStorage.setItem('lf_' + k, JSON.stringify(v)); return Promise.resolve(v); } catch (e) { return Promise.reject(e); } },
+            removeItem: k => { try { localStorage.removeItem('lf_' + k); } catch (e) {} return Promise.resolve(); },
+            clear: () => { try { Object.keys(localStorage).filter(k => k.indexOf('lf_') === 0).forEach(k => localStorage.removeItem(k)); } catch (e) {} return Promise.resolve(); },
+            config: () => {}, createInstance() { return this; }
+        };
+        window.__salvataggioDiEmergenza = true;
+    }
+    </script>
 
     <style>
         /* Ottimizzazione scorrimento e accelerazione hardware contro vibrazioni palmari */
@@ -947,7 +960,8 @@
                                 <tbody id="lista-controllo-categorie"></tbody>
                             </table>
                         </div>
-                        <div class="backup-block">
+                        <div id="stato-salvataggio" style="font-size:0.75rem; color:var(--text-muted); margin-top:0.75rem;">💾 Salvataggio automatico attivo</div>
+            <div class="backup-block">
                             <span style="font-size:0.75rem; font-weight:600; color:var(--text-muted);">Ripristino Generale:</span>
                             <button class="btn-mini-azione btn-mini-elimina" onclick="if(confirm('Attenzione: questo cancellerà tutti i prodotti e caricherà il menu di fabbrica standard. Procedere?')) forzaResetCategorieNuove()">Reset di Fabbrica</button>
                         </div>
@@ -1316,7 +1330,7 @@
         if (confirm("Sei ASSOLUTAMENTE sicuro? Questa azione eliminerà e distruggerà ogni dato memorizzato nel browser senza possibilità di recupero.")) {
             try {
                 // 1. Svuota completamente l'intero database localforage (IndexedDB)
-                await localforage.clear();
+                await localforage.clear(); try { localStorage.removeItem('st_snapshot_v1'); } catch (e) {}
                 
                 // 2. Svuota anche il localStorage tradizionale del browser
                 localStorage.clear();
@@ -2465,27 +2479,66 @@ window.salvaModalNota = salvaModalNota;
             inizializzaBancoVendita();
         }
 
+        function costruisciSnapshot() {
+            return { ts: Date.now(), elencoCategorie, databaseMenu, storicovendite, archivioRicevute, storicoChiusure, contatoreRicevute, configCategorie, databaseMagazzino };
+        }
+        function salvaSnapshotSincrono() {   // copia di sicurezza: è immediata, non si perde se la pagina si chiude subito
+            try { localStorage.setItem('st_snapshot_v1', JSON.stringify(costruisciSnapshot())); return true; } catch (e) { return false; }
+        }
+        async function scriviSuArchivio(ts) {
+            const elInt = document.getElementById('intestazione-ricevuta');
+            await Promise.all([
+                localforage.setItem('st_categorie_v7', elencoCategorie),
+                localforage.setItem('st_menu_v7', databaseMenu),
+                localforage.setItem('st_vendite_v7', storicovendite),
+                localforage.setItem('st_ricevute_log_v7', archivioRicevute),
+                localforage.setItem('st_chiusure_storico_v7', storicoChiusure),
+                localforage.setItem('st_contatore_v7', contatoreRicevute),
+                localforage.setItem('st_config_categorie_v7', configCategorie),
+                localforage.setItem('st_magazzino_v7', databaseMagazzino),
+                elInt ? localforage.setItem('st_intestazione_fissa_v7', elInt.value) : Promise.resolve()
+            ]);
+            await localforage.setItem('st_ts_v7', ts);   // scritta per ultima: se manca, l'archivio è rimasto indietro
+        }
+        function aggiornaStatoSalvataggio(okSalvato, dettaglio) {
+            const el = document.getElementById('stato-salvataggio'); if (!el) return;
+            const ora = new Date().toLocaleTimeString('it-IT');
+            el.style.color = okSalvato ? 'var(--text-muted)' : 'var(--danger)';
+            el.innerText = okSalvato ? `💾 Ultimo salvataggio: ${ora}${dettaglio || ''}` : `⚠️ Salvataggio NON riuscito alle ${ora}: esporta subito un backup.`;
+        }
         async function salvaDatiLocali() {
+            const snapOk = salvaSnapshotSincrono();
+            const ts = Date.now();
             try {
-                await localforage.setItem('st_categorie_v7', elencoCategorie);
-                await localforage.setItem('st_menu_v7', databaseMenu);
-                await localforage.setItem('st_vendite_v7', storicovendite);
-                await localforage.setItem('st_ricevute_log_v7', archivioRicevute);
-                await localforage.setItem('st_chiusure_storico_v7', storicoChiusure);
-                await localforage.setItem('st_contatore_v7', contatoreRicevute);
-                await localforage.setItem('st_config_categorie_v7', configCategorie);
-                await localforage.setItem('st_magazzino_v7', databaseMagazzino);
-                
-                const elInt = document.getElementById('intestazione-ricevuta');
-                if(elInt) {
-                    await localforage.setItem('st_intestazione_fissa_v7', elInt.value);
-                }
-
+                await scriviSuArchivio(ts);
                 inviaConfigurazioneAPalmari();
+                aggiornaStatoSalvataggio(true, window.__salvataggioDiEmergenza ? ' (modalità di emergenza)' : '');
             } catch (err) {
                 console.error("Errore durante il salvataggio dei dati nel database:", err);
-                showToast("Errore di salvataggio dati", "error");
+                aggiornaStatoSalvataggio(snapOk, snapOk ? ' (solo copia di sicurezza)' : '');
+                showToast(snapOk ? "Salvato solo nella copia di sicurezza" : "Errore di salvataggio dati", "error");
             }
+        }
+        // Se la copia di sicurezza è più recente dell'archivio (scritture interrotte alla chiusura), la usa e la rimette in archivio
+        async function ripristinaDaSnapshotSeServe() {
+            try {
+                const raw = localStorage.getItem('st_snapshot_v1'); if (!raw) return false;
+                const snap = JSON.parse(raw);
+                const tsArchivio = Number(await localforage.getItem('st_ts_v7')) || 0;
+                if (!(snap && snap.ts > tsArchivio)) return false;
+                if (Array.isArray(snap.elencoCategorie)) elencoCategorie = snap.elencoCategorie;
+                if (Array.isArray(snap.databaseMenu)) databaseMenu = snap.databaseMenu;
+                if (snap.storicovendite && typeof snap.storicovendite === 'object') storicovendite = snap.storicovendite;
+                if (Array.isArray(snap.archivioRicevute)) archivioRicevute = snap.archivioRicevute;
+                if (Array.isArray(snap.storicoChiusure)) storicoChiusure = snap.storicoChiusure;
+                if (Number.isFinite(snap.contatoreRicevute)) contatoreRicevute = snap.contatoreRicevute;
+                if (snap.configCategorie) configCategorie = snap.configCategorie;
+                if (Array.isArray(snap.databaseMagazzino)) databaseMagazzino = snap.databaseMagazzino;
+                contatoreRicevute = Math.max(contatoreRicevute, ...archivioRicevute.map(r => (Number(r.id) || 0) + 1));
+                await scriviSuArchivio(snap.ts);
+                showToast("Dati recuperati dalla copia di sicurezza", "success");
+                return true;
+            } catch (e) { return false; }
         }
 
         async function inizializzaDatabase() {
@@ -2515,6 +2568,7 @@ window.salvaModalNota = salvaModalNota;
                 
                 const magazzino = await localforage.getItem('st_magazzino_v7');
                 if (magazzino) databaseMagazzino = magazzino;
+                await ripristinaDaSnapshotSeServe();
 
                 const inAttesa = await localforage.getItem('st_comande_remote_v8');
                 if (Array.isArray(inAttesa) && typeof comandeRemoteInAttesa !== 'undefined' && comandeRemoteInAttesa.length === 0) {
@@ -3919,6 +3973,28 @@ window.salvaModalNota = salvaModalNota;
         }).join('');
     }
     mostraStorni(); disegnaModifiche();
+
+    /* ===== Salvataggio alla chiusura della pagina (Firefox compreso) ===== */
+    function salvaTuttoOra() {
+        salvaSnapshotSincrono();
+        try { salvaComandaCorrente(); } catch (e) {}
+        try { scriviSuArchivio(Date.now()).catch(() => {}); } catch (e) {}
+    }
+    window.addEventListener('pagehide', salvaTuttoOra);
+    window.addEventListener('beforeunload', () => { salvaSnapshotSincrono(); });
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') salvaTuttoOra(); });
+    (function controllaArchiviazione() {
+        let problema = '';
+        try { localStorage.setItem('__prova', '1'); if (localStorage.getItem('__prova') !== '1') problema = 'il browser non conserva i dati'; localStorage.removeItem('__prova'); }
+        catch (e) { problema = 'il browser blocca il salvataggio (navigazione privata o dati del sito disattivati)'; }
+        if (!problema && location.protocol === 'file:') problema = 'la pagina è aperta da file locale: usa l\'indirizzo del sito, altrimenti Firefox può non conservare i dati';
+        if (!problema) return;
+        const d = document.createElement('div');
+        d.style.cssText = 'position:fixed; top:0; left:0; right:0; z-index:99999; background:#dc2626; color:#fff; padding:8px 12px; font-size:0.85rem; font-weight:700; text-align:center;';
+        d.innerText = '⚠️ ATTENZIONE: ' + problema + '. I dati potrebbero andare persi alla chiusura. Esporta spesso il backup.';
+        d.onclick = () => d.remove();
+        document.body.appendChild(d);
+    })();
 
     /* ===== Ordine aperto: salvato di continuo, così non si perde se la pagina si ricarica ===== */
     function salvaComandaCorrente() {
