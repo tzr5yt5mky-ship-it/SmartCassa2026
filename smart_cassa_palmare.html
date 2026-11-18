@@ -219,6 +219,7 @@
             
             <ul class="lista-comanda" id="corpo-comanda-palmare"></ul>
 
+            <div id="banner-modifica-ordine" style="display:none; background:var(--warning-dim, rgba(245,158,11,0.15)); border:1px solid var(--warning, #f59e0b); border-radius:10px; padding:8px 10px; margin-bottom:8px; font-size:0.8rem;"></div>
             <div class="totale-box-mobile">
                 <span>TOTALE STIMATO</span>
                 <span class="prezzo" id="totale-comanda-palmare">0,00 €</span>
@@ -270,6 +271,7 @@
         let stanzaAttiva = "";
         let operatore = "";
         let storicoInviati = [];
+        let ordineInModifica = null;   // { oid, tavolo, articoli } dell'ordine già inviato che si sta correggendo
         let contoAttivo = 0;   // 0 = conto unico, 1..4 = conti separati
         let ordiniNonConfermati = {};   // oid -> pacchetto: restano finché la cassa non conferma
 
@@ -427,7 +429,8 @@
             const corpo = document.getElementById('corpo-comanda-palmare');
             const totale = comandaPalmare.reduce((acc, curr) => acc + Math.round(curr.prezzo * curr.quantita * 100), 0) / 100;
             document.getElementById('totale-comanda-palmare').innerText = formattaEuro(totale);
-            document.getElementById('btn-invia-cassa').disabled = comandaPalmare.length === 0;
+            document.getElementById('btn-invia-cassa').disabled = comandaPalmare.length === 0 && !ordineInModifica;
+            aggiornaBannerModifica();
             if (comandaPalmare.length === 0) {
                 corpo.innerHTML = `<div class="comanda-vuota-stato"><span style="font-size:2rem">🧾</span>Carrello vuoto. Seleziona i prodotti.</div>`;
                 return;
@@ -465,13 +468,25 @@
             const box = document.getElementById('lista-storico-palmare');
             if (storicoInviati.length === 0) { box.innerHTML = '<p style="color:var(--text-muted); font-size:0.85rem;">Nessun ordine inviato.</p>'; return; }
             box.innerHTML = storicoInviati.map((o, i) => {
-                const tot = o.articoli.reduce((a, x) => a + x.prezzo * x.quantita, 0);
                 const ora = new Date(o.ora).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
+                const isMod = o.tipo === 'MODIFICA';
+                let stato = '⏳ in attesa';
+                if (o.esito === 'APPLICATA') stato = '✔ applicata';
+                else if (o.esito === 'RIFIUTATA') stato = '✖ rifiutata dalla cassa';
+                else if (o.confermato) stato = isMod ? '✔ ricevuta, la cassa deve applicarla' : '✔ ricevuto';
+                if (isMod) {
+                    return `<div style="border:1px dashed var(--primary); border-radius:10px; padding:8px; margin-bottom:8px;">
+                        <div style="display:flex; justify-content:space-between; font-weight:800;"><span>✏️ MODIFICA ${esc(o.tavolo)}</span><span style="font-size:0.75rem;">${stato}</span></div>
+                        <small style="color:var(--text-muted);">${ora}</small>
+                        <div style="font-size:0.8rem; margin-top:4px;">${o.delta.map(d => `${d.delta > 0 ? '➕' : '➖'} ${Math.abs(d.delta)}x ${esc(d.nome || '')}${d.variazione ? ' (' + esc(d.variazione) + ')' : ''}${d.conto ? ' [C' + d.conto + ']' : ''}`).join('<br>')}</div>
+                    </div>`;
+                }
+                const tot = o.articoli.reduce((a, x) => a + x.prezzo * x.quantita, 0);
                 return `<div style="border:1px solid var(--border); border-radius:10px; padding:8px; margin-bottom:8px;">
-                    <div style="display:flex; justify-content:space-between; font-weight:800;"><span>${esc(o.tavolo)}</span><span style="font-size:0.8rem;">${o.confermato ? '✔ ricevuto' : '⏳ in attesa'}</span></div>
+                    <div style="display:flex; justify-content:space-between; font-weight:800;"><span>${esc(o.tavolo)}</span><span style="font-size:0.8rem;">${stato}</span></div>
                     <small style="color:var(--text-muted);">${ora} · ${formattaEuro(tot)}</small>
-                    <div style="font-size:0.8rem; margin-top:4px;">${o.articoli.map(a => `${a.conto ? '[C' + a.conto + '] ' : ''}${a.quantita}x ${esc(a.nome)}${a.variazione ? ' (' + esc(a.variazione) + ')' : ''}`).join('<br>')}</div>
-                    <button class="btn-modal confirm" style="margin-top:6px; padding:0.4rem 0.9rem;" onclick="riordinaDaStorico(${i})">↻ Riordina</button>
+                    <div style="font-size:0.8rem; margin-top:4px;">${o.articoli.length ? o.articoli.map(a => `${a.conto ? '[C' + a.conto + '] ' : ''}${a.quantita}x ${esc(a.nome)}${a.variazione ? ' (' + esc(a.variazione) + ')' : ''}`).join('<br>') : '<em>(ordine annullato)</em>'}</div>
+                    <div style="display:flex; gap:6px; margin-top:6px;"><button class="btn-modal confirm" style="padding:0.4rem 0.9rem;" onclick="modificaDaStorico(${i})">✏️ Modifica</button><button class="btn-modal cancel" style="padding:0.4rem 0.9rem;" onclick="riordinaDaStorico(${i})">↻ Riordina</button></div>
                 </div>`;
             }).join('');
         }
@@ -488,6 +503,73 @@
             const inputT = document.getElementById('num-tavolo-palmare'); if (inputT && !inputT.value) inputT.value = o.tavolo === 'BANCO' ? '' : o.tavolo;
             salvaCarrello(); aggiornaInterfacciaComandaPalmare(); aggiornaBadgeNavigazione(); chiudiStoricoInviati();
             showToast(saltati ? `Riordinato (${saltati} articolo/i non più in listino)` : 'Prodotti aggiunti all\'ordine', saltati ? 'error' : 'success');
+        }
+
+        // ---------- Modifica di un ordine già inviato ----------
+        function salvaStatoModifica() { try { if (ordineInModifica) localStorage.setItem('smartcassa_ordine_in_modifica', JSON.stringify(ordineInModifica)); else localStorage.removeItem('smartcassa_ordine_in_modifica'); } catch (e) {} }
+        function aggiornaBannerModifica() {
+            const b = document.getElementById('banner-modifica-ordine'); if (!b) return;
+            const btn = document.getElementById('btn-invia-cassa');
+            if (!ordineInModifica) { b.style.display = 'none'; if (btn) btn.innerHTML = '📡 INVIA ALLA CASSA'; return; }
+            b.style.display = 'block';
+            b.innerHTML = `<strong>✏️ Stai modificando l'ordine di ${esc(ordineInModifica.tavolo)}</strong><br>Cambia quantità, note o conti. Per annullare tutto l'ordine togli tutti i prodotti. <button class="chip-conto" style="margin-top:6px;" onclick="annullaModificaOrdine()">✖ Esci senza modificare</button>`;
+            if (btn) btn.innerHTML = comandaPalmare.length === 0 ? '🗑️ INVIA ANNULLAMENTO ORDINE' : '✏️ INVIA MODIFICA';
+        }
+        function modificaDaStorico(i) {
+            const o = storicoInviati[i]; if (!o || o.tipo === 'MODIFICA') return;
+            if (comandaPalmare.length > 0 && !ordineInModifica && !confirm('Nel carrello ci sono prodotti non ancora inviati: verranno sostituiti. Continuo?')) return;
+            ordineInModifica = { oid: o.oid, tavolo: o.tavolo, articoli: JSON.parse(JSON.stringify(o.articoli)) };
+            comandaPalmare = o.articoli.map(a => ({ id: a.id, nome: a.nome, prezzo: (databaseMenu.find(m => m.id === a.id) || a).prezzo, quantita: a.quantita, variazione: a.variazione || '', conto: a.conto || 0 }));
+            const it = document.getElementById('num-tavolo-palmare'); it.value = o.tavolo === 'BANCO' ? '' : o.tavolo; it.readOnly = true;
+            salvaStatoModifica(); salvaCarrello(); aggiornaInterfacciaComandaPalmare(); aggiornaBadgeNavigazione(); chiudiStoricoInviati();
+            switchSchermataMobile('comanda');
+        }
+        function uscitaDaModifica() {
+            ordineInModifica = null; comandaPalmare = []; contoAttivo = 0; disegnaBarraConti();
+            const it = document.getElementById('num-tavolo-palmare'); it.value = ''; it.readOnly = false;
+            salvaStatoModifica(); salvaCarrello(); aggiornaInterfacciaComandaPalmare(); aggiornaBadgeNavigazione();
+        }
+        function annullaModificaOrdine() { if (confirm('Esco dalla modifica senza inviare nulla?')) uscitaDaModifica(); }
+        function spedisciModifica() {
+            const base = ordineInModifica;
+            const chiave = a => `${a.id}|${a.variazione || ''}|${a.conto || 0}`;
+            const prima = {}, dopo = {};
+            base.articoli.forEach(a => { prima[chiave(a)] = (prima[chiave(a)] || 0) + a.quantita; });
+            comandaPalmare.forEach(a => { dopo[chiave(a)] = (dopo[chiave(a)] || 0) + a.quantita; });
+            const delta = [];
+            new Set([...Object.keys(prima), ...Object.keys(dopo)]).forEach(k => {
+                const d = (dopo[k] || 0) - (prima[k] || 0);
+                if (d === 0) return;
+                const rif = comandaPalmare.find(a => chiave(a) === k) || base.articoli.find(a => chiave(a) === k);
+                delta.push({ id: rif.id, nome: rif.nome, variazione: rif.variazione || '', conto: rif.conto || 0, delta: d });
+            });
+            if (delta.length === 0) { showToast("Nessuna modifica rispetto all'ordine inviato.", "error"); return; }
+            const oid = nuovoOid();
+            const pacchetto = { tipo: 'MODIFICA', oid, oidOriginale: base.oid, tavolo: base.tavolo, operatore, dataEmissione: new Date().toISOString(), articoli: [], delta };
+            ordiniNonConfermati[oid] = pacchetto;
+            salvaLocale('smartcassa_non_confermati', ordiniNonConfermati);
+            const nuovoStato = comandaPalmare.map(a => ({ id: a.id, nome: a.nome, prezzo: a.prezzo, quantita: a.quantita, variazione: a.variazione || '', conto: a.conto || 0 }));
+            const orig = storicoInviati.find(x => x.oid === base.oid);
+            storicoInviati.unshift({ oid, tipo: 'MODIFICA', oidOriginale: base.oid, tavolo: base.tavolo, ora: pacchetto.dataEmissione, confermato: false, esito: '', delta, prima: JSON.parse(JSON.stringify(orig ? orig.articoli : base.articoli)) });
+            if (orig) orig.articoli = nuovoStato;
+            salvaStoricoInviati();
+            uscitaDaModifica();
+            switchSchermataMobile('menu');
+            aggiornaBannerInvio();
+            if (clientMqtt && clientMqtt.connected) { reinviaOrdiniNonConfermati(); showToast("Modifica inviata, attendo la cassa…"); }
+            else showToast("Nessuna rete: modifica in coda, parte appena torna la connessione.", "error");
+        }
+        function aggiornaEsitoModifica(oid, esito) {
+            const st = storicoInviati.find(x => x.oid === oid); if (!st) return;
+            st.confermato = true; st.esito = esito;
+            if (st.tipo === 'MODIFICA' && esito === 'RIFIUTATA') {
+                const orig = storicoInviati.find(x => x.oid === st.oidOriginale);
+                if (orig && st.prima) orig.articoli = st.prima;   // l'ordine torna com'era
+            }
+            salvaStoricoInviati();
+            if (navigator.vibrate) navigator.vibrate([80, 40, 80]);
+            showToast(esito === 'APPLICATA' ? '✔ Modifica applicata dalla cassa' : '✖ Modifica rifiutata dalla cassa', esito === 'APPLICATA' ? 'success' : 'error');
+            if (document.getElementById('modal-storico-palmare').classList.contains('active')) disegnaStoricoInviati();
         }
 
         let wakeLock = null;
@@ -604,6 +686,7 @@
                             if (navigator.vibrate) navigator.vibrate([80, 40, 80]);
                             showToast("✔ Comanda ricevuta dalla cassa", "success");
                         }
+                        try { const es = (JSON.parse(message.toString()) || {}).esito; if (es) aggiornaEsitoModifica(oid, es); } catch (e) {}
                         return;
                     }
                     if (topic !== tMenu || message.length > 500000) return;
@@ -626,9 +709,10 @@
         }
 
         function spedisciOrdineACassa() {
-            if (comandaPalmare.length === 0) return;
+            if (comandaPalmare.length === 0 && !ordineInModifica) return;
             if (!stanzaAttiva) { showToast("Inserisci prima il codice rete (⚙️).", "error"); toggleConfigPanelSeChiuso(); return; }
             if (!operatore) { showToast("Inserisci prima il tuo nome operatore.", "error"); apriOperatore(); return; }
+            if (ordineInModifica) { spedisciModifica(); return; }
             const tavolo = pulisci(document.getElementById('num-tavolo-palmare').value, 40) || "BANCO";
             const oid = nuovoOid();
             const pacchetto = {
@@ -684,6 +768,7 @@
             aggiornaBannerInvio();
             salvaEConnettiReteMqtt();
             if (!operatore) setTimeout(apriOperatore, 400);
+            try { const m = JSON.parse(localStorage.getItem('smartcassa_ordine_in_modifica') || 'null'); if (m && m.oid) { ordineInModifica = m; const it = document.getElementById('num-tavolo-palmare'); if (it) it.readOnly = true; } } catch (e) {}
             aggiornaInterfacciaComandaPalmare();
             setInterval(() => { if (Object.keys(ordiniNonConfermati).length) reinviaOrdiniNonConfermati(); }, 8000);
             if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').catch(() => {});

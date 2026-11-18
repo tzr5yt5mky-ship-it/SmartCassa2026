@@ -554,6 +554,8 @@
         .dividi-riga.sel { background:var(--success-dim); }
         .dividi-ctrl { display:flex; align-items:center; gap:4px; white-space:nowrap; }
         .chip-dividi { border:1px solid var(--border-hover); background:var(--surface); color:var(--text-main); border-radius:14px; padding:4px 10px; font-weight:700; font-size:0.75rem; cursor:pointer; }
+        #box-modifiche-palmari .scheda-mod { border:2px solid var(--warning); background:var(--warning-dim, rgba(245,158,11,0.12)); border-radius:var(--radius-sm); padding:8px; margin-bottom:8px; font-size:0.8rem; }
+        #box-modifiche-palmari .scheda-mod .btn-riga { display:flex; gap:6px; margin-top:6px; }
 </style>
     <script src="https://unpkg.com/mqtt@5.10.1/dist/mqtt.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js"></script>
@@ -731,6 +733,8 @@
 
         <aside class="comanda-container">
             <input type="text" id="intestazione-ricevuta" class="input-tavolo" placeholder="Intestazione Formale / Ragione Sociale" autocomplete="off" style="font-weight: 500; font-size: 0.8rem; border-color: var(--border-hover);" oninput="localforage.setItem('st_intestazione_fissa_v7', this.value).catch(err => console.error(err))">
+            <div id="box-modifiche-palmari"></div>
+            <div id="banner-storni"></div>
             <input type="text" id="operatore-cassa" class="input-tavolo" placeholder="👤 Operatore cassa" maxlength="30" autocomplete="off" style="font-size:0.8rem;" oninput="salvaOperatoreCassa()">
             <input type="text" id="num-tavolo" class="input-tavolo" placeholder="Tavolo / Nome Cliente" autocomplete="off">
             
@@ -776,7 +780,7 @@
 
             <div style="display: flex; gap: 0.5rem; margin-top: 0.25rem;">
                 <button id="btn-azione-parcheggia" class="btn-azione btn-svuota" style="color: var(--warning); border-color: transparent;" onclick="riparcheggiaComanda()" disabled>⏸️ Parcheggia</button>
-                <button id="btn-azione-svuota" class="btn-azione btn-svuota" onclick="svuotaComanda()" disabled>Annulla operazione</button>
+                <button id="btn-azione-svuota" class="btn-azione btn-svuota" onclick="svuotaConStorno()" disabled>Annulla operazione</button>
             </div>
         </aside>
 
@@ -1436,12 +1440,11 @@
         });
 
         function cambiaQuantitaItem(idx, variaz) {
-    if(!comandaAttuale[idx]) return;
-    comandaAttuale[idx].quantita += variaz;
-    if (comandaAttuale[idx].stampato) Object.keys(comandaAttuale[idx].stampato).forEach(k => { comandaAttuale[idx].stampato[k] = Math.min(comandaAttuale[idx].stampato[k], Math.max(0, comandaAttuale[idx].quantita)); });
-    if(comandaAttuale[idx].quantita <= 0) {
-        comandaAttuale.splice(idx, 1);
-    }
+    const it = comandaAttuale[idx];
+    if(!it) return;
+    it.quantita += variaz;
+    allineaStampatoEStorni(it, Math.max(0, it.quantita));   // se scende sotto ciò che cucina/bar hanno già ricevuto: foglio di storno
+    if(it.quantita <= 0) comandaAttuale.splice(idx, 1);
     aggiornaInterfacciaComanda();
 }
 
@@ -1486,7 +1489,7 @@ function salvaModalNota() {
         const inputNota = document.getElementById('input-modal-nota');
         if (inputNota) {
             const nuovaNota = inputNota.value.trim();
-            if (nuovaNota !== (comandaAttuale[indexNotaModifica].variazione || '')) comandaAttuale[indexNotaModifica].stampato = {};  // nota cambiata: va ristampata
+            if (nuovaNota !== (comandaAttuale[indexNotaModifica].variazione || '')) { stornaRiga(comandaAttuale[indexNotaModifica]); comandaAttuale[indexNotaModifica].stampato = {}; }  // nota cambiata: storno della vecchia, ristampa della nuova
             comandaAttuale[indexNotaModifica].variazione = nuovaNota;
         }
         aggiornaInterfacciaComanda();
@@ -1847,7 +1850,10 @@ window.salvaModalNota = salvaModalNota;
             const pend = stampaPendente; stampaPendente = null;
             chiudiModalAnteprima();
             window.print();
-            if (pend) {
+            if (pend && pend.storni) {
+                storniPendenti = storniPendenti.filter(x => !pend.storni.includes(x));
+                salvaStorni(); mostraStorni();
+            } else if (pend) {
                 pend.items.forEach(i => { i.stampato = i.stampato || {}; i.stampato[pend.reparto] = i.quantita; });
                 aggiornaInterfacciaComanda();
             }
@@ -2634,7 +2640,9 @@ window.salvaModalNota = salvaModalNota;
                     if (topic === tRichiestaMenu) { inviaConfigurazioneAPalmari(true); return; }
                     if (topic !== tComande || message.length > 50000) return;
 
-                    const ordine = validaOrdineRemoto(JSON.parse(message.toString()));
+                    const grezzo = JSON.parse(message.toString());
+                    if (grezzo && grezzo.tipo === 'MODIFICA') { riceviModificaRemota(grezzo); return; }
+                    const ordine = validaOrdineRemoto(grezzo);
                     if (!ordine) return;
 
                     if (ordine.oid) {
@@ -3748,6 +3756,170 @@ window.salvaModalNota = salvaModalNota;
         inizializzaBancoVendita();
     }
     
+
+    /* ===== Storni (annullamenti per cucina/bar) e modifiche dal palmare ===== */
+    let storniPendenti = [];
+    try { storniPendenti = JSON.parse(localStorage.getItem('st_storni') || '[]'); } catch (e) { storniPendenti = []; }
+    function salvaStorni() { try { localStorage.setItem('st_storni', JSON.stringify(storniPendenti)); } catch (e) {} }
+    function registraStorno(item, reparto, q, tavolo) {
+        if (!(q > 0)) return;
+        tavolo = (tavolo !== undefined && tavolo !== null) ? tavolo : (document.getElementById('num-tavolo')?.value || '');
+        const ex = storniPendenti.find(x => x.reparto === reparto && x.tavolo === tavolo && x.id === item.id && (x.variazione || '') === (item.variazione || ''));
+        if (ex) ex.quantita += q;
+        else storniPendenti.push({ id: item.id, tavolo, reparto, nome: item.nome, variazione: item.variazione || '', quantita: q, operatore: operatoreOrdine, ora: new Date().toISOString() });
+        salvaStorni(); mostraStorni();
+        showToast(`⚠️ Storno da stampare per ${reparto}: ${q}x ${item.nome}`, 'error');
+    }
+    function allineaStampatoEStorni(item, nuovaQ, tavolo) {
+        if (!item.stampato) return;
+        Object.keys(item.stampato).forEach(rep => {
+            const st = item.stampato[rep] || 0;
+            if (st > nuovaQ) { registraStorno(item, rep, st - nuovaQ, tavolo); item.stampato[rep] = nuovaQ; }
+        });
+    }
+    function stornaRiga(item, tavolo) {
+        Object.keys(item.stampato || {}).forEach(rep => { if (item.stampato[rep] > 0) registraStorno(item, rep, item.stampato[rep], tavolo); });
+    }
+    function svuotaConStorno() {
+        if (idRicevutaInModifica === null) comandaAttuale.forEach(i => stornaRiga(i));
+        svuotaComanda();
+    }
+    function mostraStorni() {
+        const box = document.getElementById('banner-storni'); if (!box) return;
+        const reparti = [...new Set(storniPendenti.map(x => x.reparto))];
+        box.innerHTML = reparti.map(r => {
+            const n = storniPendenti.filter(x => x.reparto === r).reduce((a, x) => a + x.quantita, 0);
+            return `<div style="display:flex; gap:6px; margin-bottom:6px;"><button class="btn-azione" style="flex:1; margin:0; background:var(--danger); color:#fff;" onclick="avviaStampaStorno('${r}')">🖨️ Foglio di STORNO ${esc(r)} (${n} pz)</button><button class="chip-dividi" title="Scarta senza stampare (già avvisato a voce)" onclick="scartaStorni('${r}')">✖</button></div>`;
+        }).join('');
+    }
+    function scartaStorni(r) {
+        if (!confirm(`Scartare lo storno ${r} senza stamparlo? Assicurati di aver avvisato il reparto.`)) return;
+        storniPendenti = storniPendenti.filter(x => x.reparto !== r); salvaStorni(); mostraStorni();
+    }
+    function avviaStampaStorno(reparto) {
+        const lista = storniPendenti.filter(x => x.reparto === reparto); if (!lista.length) return;
+        let html = `<div class="stampa-titolo">REPARTO ${esc(reparto)} - ANNULLATO</div><div class="stampa-subtitolo">NON PREPARARE: ordine modificato</div>`;
+        html += `<div style="margin-bottom:12px; font-size:10pt;"><b>Data:</b> ${new Date().toLocaleString('it-IT')}</div>`;
+        html += `<table class="stampa-tabella">` + lista.map(x => `<tr><td><b>❌ ${x.quantita}x</b> ${esc(x.nome)}${x.variazione ? `<br><small style="margin-left:8px;">* ${esc(x.variazione)}</small>` : ''}</td><td style="text-align:right; vertical-align:top;">${esc(x.tavolo || '')}</td></tr>`).join('') + `</table>`;
+        document.getElementById('blocco-stampa').innerHTML = html;
+        stampaPendente = { storni: lista };
+        gestisciStampaOAnteprima();
+    }
+
+    let modificheInAttesa = [];
+    try { modificheInAttesa = JSON.parse(localStorage.getItem('st_modifiche_attesa') || '[]'); } catch (e) { modificheInAttesa = []; }
+    function salvaModifiche() { try { localStorage.setItem('st_modifiche_attesa', JSON.stringify(modificheInAttesa)); } catch (e) {} }
+    const normTavolo = t => String(t || '').trim().toUpperCase();
+    const haStampato = righe => righe.some(r => Math.max(0, ...Object.values(r.stampato || {})) > 0);
+    function inviaAckPalmare(oid, obj) {
+        try { if (clientMqttCassa && clientMqttCassa.connected) clientMqttCassa.publish(`smartcassa/ack/${STANZA_HOTSPOT_CONDIVISA}/${oid}`, JSON.stringify(obj), { qos: 1 }); } catch (e) {}
+    }
+    function validaModificaRemota(o) {
+        if (!o || o.tipo !== 'MODIFICA' || !Array.isArray(o.delta)) return null;
+        const oid = /^[A-Za-z0-9_-]{6,40}$/.test(String(o.oid || '')) ? String(o.oid) : null;
+        const oidOriginale = /^[A-Za-z0-9_-]{6,40}$/.test(String(o.oidOriginale || '')) ? String(o.oidOriginale) : null;
+        if (!oid) return null;
+        const delta = [];
+        for (const d of o.delta.slice(0, 60)) {
+            if (!d) continue;
+            const id = Number(d.id), q = Math.trunc(Number(d.delta));
+            if (!Number.isFinite(id) || !Number.isFinite(q) || q === 0) continue;
+            delta.push({ id, nome: pulisciTesto(d.nome, 80), delta: Math.max(-99, Math.min(99, q)), variazione: pulisciTesto(d.variazione, 80), conto: Math.max(0, Math.min(9, Math.floor(Number(d.conto)) || 0)) });
+        }
+        if (!delta.length) return null;
+        return { tipo: 'MODIFICA', oid, oidOriginale, tavolo: pulisciTesto(o.tavolo, 40).replace(/^[=+\-@]+/, '') || 'BANCO', operatore: pulisciTesto(o.operatore, 30), dataEmissione: pulisciTesto(o.dataEmissione, 40), delta };
+    }
+    function trovaTargetModifica(m) {
+        const tv = normTavolo(m.tavolo);
+        let i = m.oidOriginale ? comandeRemoteInAttesa.findIndex(c => c.oid && c.oid === m.oidOriginale) : -1;
+        if (i >= 0) return { tipo: 'attesa', idx: i };
+        if (comandaAttuale.length > 0 && idRicevutaInModifica === null && normTavolo(document.getElementById('num-tavolo')?.value) === tv) return { tipo: 'cassa' };
+        i = comandeRemoteInAttesa.findIndex(c => normTavolo(c.tavolo) === tv);
+        if (i >= 0) return { tipo: 'attesa', idx: i };
+        return null;
+    }
+    const righeDelTarget = t => t.tipo === 'cassa' ? comandaAttuale : comandeRemoteInAttesa[t.idx].articoli;
+    function applicaDeltaARighe(righe, delta, conPrezzi, tavolo) {
+        const nonApplicate = [], applicate = [];
+        delta.forEach(d => {
+            const chiave = r => r.id === d.id && (r.variazione || '') === (d.variazione || '') && (r.conto || 0) === (d.conto || 0);
+            const e = righe.find(chiave);
+            if (d.delta > 0) {
+                if (e) e.quantita += d.delta;
+                else {
+                    const prod = databaseMenu.find(m => m.id === d.id);
+                    if (!prod) { nonApplicate.push(d); return; }
+                    righe.push({ id: prod.id, nome: prod.nome, prezzo: conPrezzi ? prod.prezzo : 0, quantita: d.delta, variazione: d.variazione || '', conto: d.conto || 0 });
+                }
+                applicate.push(d);
+            } else {
+                if (!e) { nonApplicate.push(d); return; }
+                const tolti = Math.min(e.quantita, -d.delta);
+                e.quantita -= tolti;
+                allineaStampatoEStorni(e, e.quantita, tavolo);
+                if (e.quantita <= 0) righe.splice(righe.indexOf(e), 1);
+                if (tolti < -d.delta) nonApplicate.push({ ...d, delta: -(-d.delta - tolti) });
+                if (tolti > 0) applicate.push({ ...d, delta: -tolti });
+            }
+        });
+        return { applicate, nonApplicate };
+    }
+    function applicaModifica(i, automatica) {
+        const m = modificheInAttesa[i]; if (!m) return;
+        const t = trovaTargetModifica(m);
+        if (!t) { showToast('Ordine non più modificabile (già incassato o chiuso): rifiuta la modifica.', 'error'); return; }
+        const righe = righeDelTarget(t);
+        const esito = applicaDeltaARighe(righe, m.delta, t.tipo === 'cassa', m.tavolo);
+        if (t.tipo === 'cassa') {
+            if (comandaAttuale.length === 0) svuotaComanda(true); else aggiornaInterfacciaComanda();
+        } else {
+            if (righe.length === 0) comandeRemoteInAttesa.splice(t.idx, 1);
+            aggiornaBarraNotifichePalmari();
+        }
+        modificheInAttesa.splice(i, 1); salvaModifiche(); disegnaModifiche();
+        inviaAckPalmare(m.oid, { ok: true, esito: 'APPLICATA' });
+        if (esito.nonApplicate.length) showToast(`Modifica applicata solo in parte: ${esito.nonApplicate.map(d => Math.abs(d.delta) + 'x ' + (d.nome || '#' + d.id)).join(', ')} non trovati (già pagati?).`, 'error');
+        else showToast(automatica ? `✏️ Modifica applicata in automatico: ${m.tavolo}` : `✏️ Modifica applicata: ${m.tavolo}`, 'success');
+    }
+    function rifiutaModifica(i) {
+        const m = modificheInAttesa[i]; if (!m) return;
+        modificheInAttesa.splice(i, 1); salvaModifiche(); disegnaModifiche();
+        inviaAckPalmare(m.oid, { ok: true, esito: 'RIFIUTATA' });
+    }
+    function riceviModificaRemota(g) {
+        const m = validaModificaRemota(g); if (!m) return;
+        inviaAckPalmare(m.oid, { ok: true });                      // ricevuta (anche per i doppioni)
+        if (ordiniGiaRicevuti.includes(m.oid)) return;
+        ordiniGiaRicevuti = [...ordiniGiaRicevuti, m.oid].slice(-300);
+        try { localStorage.setItem('st_oid_ricevuti_v8', JSON.stringify(ordiniGiaRicevuti)); } catch (e) {}
+        modificheInAttesa.push(m);
+        const t = trovaTargetModifica(m);
+        // ordine non ancora caricato e mai stampato: nulla da stornare, si applica da solo
+        if (t && t.tipo === 'attesa' && comandeRemoteInAttesa[t.idx].oid === m.oidOriginale && !haStampato(comandeRemoteInAttesa[t.idx].articoli)) {
+            applicaModifica(modificheInAttesa.length - 1, true); return;
+        }
+        salvaModifiche(); disegnaModifiche();
+        window.riproduciSuonoNotificaCassa();
+        showToast(`✏️ Modifica dal palmare: ${m.tavolo}`);
+    }
+    function disegnaModifiche() {
+        const box = document.getElementById('box-modifiche-palmari'); if (!box) return;
+        box.innerHTML = modificheInAttesa.map((m, i) => {
+            const t = trovaTargetModifica(m);
+            const dove = !t ? '⚠️ ordine non trovato (già incassato o chiuso?)' : (t.tipo === 'cassa' ? '📍 ordine aperto in cassa' : (comandeRemoteInAttesa[t.idx].origine === 'CASSA' ? '🅿️ ordine parcheggiato' : '⏳ ordine in attesa di caricamento'));
+            let avviso = '';
+            if (t) {
+                const righe = righeDelTarget(t);
+                const colpito = m.delta.some(d => d.delta < 0 && righe.some(r => r.id === d.id && (r.variazione || '') === (d.variazione || '') && (r.conto || 0) === (d.conto || 0) && Math.max(0, ...Object.values(r.stampato || {})) > 0));
+                if (colpito) avviso = '<div style="color:var(--danger); font-weight:700; margin-top:4px;">⚠️ Contiene piatti già stampati: verrà preparato il foglio di storno.</div>';
+            }
+            const righeD = m.delta.map(d => `${d.delta > 0 ? '➕' : '➖'} ${Math.abs(d.delta)}x ${esc(d.nome || (databaseMenu.find(x => x.id === d.id) || {}).nome || '#' + d.id)}${d.variazione ? ' (' + esc(d.variazione) + ')' : ''}${d.conto ? ' [C' + d.conto + ']' : ''}`).join('<br>');
+            return `<div class="scheda-mod"><strong>✏️ MODIFICA ${esc(m.tavolo)}</strong>${m.operatore ? ` · 👤 ${esc(m.operatore)}` : ''}<br><small>${dove}</small><div style="margin-top:4px;">${righeD}</div>${avviso}
+                <div class="btn-riga"><button class="btn-azione" style="margin:0; flex:1;" ${t ? '' : 'disabled'} onclick="applicaModifica(${i})">✔ Applica</button><button class="btn-azione btn-svuota" style="margin:0; flex:1;" onclick="rifiutaModifica(${i})">✖ Rifiuta</button></div></div>`;
+        }).join('');
+    }
+    mostraStorni(); disegnaModifiche();
+
     /* ===== Ordine aperto: salvato di continuo, così non si perde se la pagina si ricarica ===== */
     function salvaComandaCorrente() {
         try {
@@ -3773,7 +3945,7 @@ window.salvaModalNota = salvaModalNota;
         li.innerHTML = conti.map(c => `<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;"><span>🧾 Conto ${c}: <strong>${formattaEuro(tot[c])}</strong></span><button class="chip-dividi" onclick="apriModalDividi(); dividiConto(${c})">Paga</button></div>`).join('');
         corpo.appendChild(li);
     }
-    aggiornaInterfacciaComanda = function () { _aggiornaComandaOriginale.apply(this, arguments); mostraSubtotaliConti(); salvaComandaCorrente(); };
+    aggiornaInterfacciaComanda = function () { _aggiornaComandaOriginale.apply(this, arguments); mostraSubtotaliConti(); disegnaModifiche(); salvaComandaCorrente(); };
     window.aggiornaInterfacciaComanda = aggiornaInterfacciaComanda;
     ['num-tavolo', 'valore-sconto'].forEach(id => document.getElementById(id)?.addEventListener('input', salvaComandaCorrente));
     document.getElementById('tipo-sconto')?.addEventListener('change', salvaComandaCorrente);
