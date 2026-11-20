@@ -192,14 +192,19 @@
         <input type="text" id="chiave-rete-id" value="" placeholder="Codice mostrato sulla cassa" autocapitalize="off" autocomplete="off" onchange="salvaEConnettiReteMqtt()">
         <label for="nome-operatore" style="margin-top:8px;">Nome operatore (compare sulla cassa e sulle comande):</label>
         <input type="text" id="nome-operatore" placeholder="Es: Marco" maxlength="30" autocomplete="off" onchange="salvaOperatore()" oninput="salvaOperatore()">
+        <div style="display:flex; flex-direction:column; gap:6px; margin-top:12px;">
+            <button class="chip-conto" onclick="riconnettiERicaricaMenu()">🔄 Riconnetti e ricarica il menu</button>
+            <button class="chip-conto" onclick="azzeraLavoro()">🧹 Azzera ordine, coda e storico (tengo rete e operatore)</button>
+            <button class="chip-conto" style="color:var(--danger); border-color:var(--danger);" onclick="resetCompleto()">⚠️ Reset completo del palmare</button>
+        </div>
     </div>
 
-    <div class="banner-invio" id="banner-invio"><span id="banner-invio-testo"></span><button onclick="reinviaOrdiniNonConfermati(true)">Riprova ora</button></div>
+    <div class="banner-invio" id="banner-invio"><span id="banner-invio-testo"></span><button onclick="reinviaOrdiniNonConfermati(true)">Riprova ora</button><button onclick="scartaCodaNonConfermati()" style="margin-left:6px;">Elimina</button></div>
 
     <div class="main-layout">
         <div id="view-prodotti-container">
             <div class="top-inputs">
-                <input type="text" id="num-tavolo-palmare" class="input-tavolo" placeholder="TAVOLO / NOME" autocomplete="off">
+                <input type="text" id="num-tavolo-palmare" class="input-tavolo" placeholder="TAVOLO / NOME" autocomplete="off" list="tavoli-recenti"><datalist id="tavoli-recenti"></datalist>
                 <div class="search-container">
                     <input type="text" id="search-prodotti" class="search-bar" placeholder="🔍 Cerca nel menu..." oninput="ricercaProdotti()">
                     <button id="btn-clear-search" class="btn-clear-search" onclick="svuotaFiltroRicerca()">✕</button>
@@ -214,7 +219,7 @@
         <div id="view-comanda-container" class="comanda-screen">
             <div class="header-comanda">
                 <span style="font-weight:800; font-size:1.1rem;">Riepilogo Ordine</span>
-                <div style="display:flex; gap:6px;"><button class="btn-svuota" style="background:var(--bg-main); color:var(--text-main); border-color:var(--border);" onclick="apriStoricoInviati()">🕘 Inviati</button><button class="btn-svuota" onclick="svuotaComanda()">🗑️ Svuota</button></div>
+                <div style="display:flex; gap:6px;"><button class="btn-svuota" id="btn-annulla-azione" style="background:var(--bg-main); color:var(--text-main); border-color:var(--border); opacity:0.45;" onclick="annullaUltimaModifica()" disabled>↩️ Annulla</button><button class="btn-svuota" style="background:var(--bg-main); color:var(--text-main); border-color:var(--border);" onclick="apriStoricoInviati()">🕘 Inviati</button><button class="btn-svuota" onclick="svuotaComanda()">🗑️ Svuota</button></div>
             </div>
             
             <ul class="lista-comanda" id="corpo-comanda-palmare"></ul>
@@ -242,7 +247,7 @@
         <div class="modal-box" style="max-width:380px;">
             <h3>🕘 Ordini inviati</h3>
             <div id="lista-storico-palmare" style="max-height:55vh; overflow-y:auto; margin-bottom:0.75rem;"></div>
-            <div class="modal-actions"><button class="btn-modal cancel" onclick="chiudiStoricoInviati()">Chiudi</button></div>
+            <div class="modal-actions"><button class="btn-modal cancel" onclick="svuotaStoricoInviati()">🗑️ Svuota elenco</button><button class="btn-modal cancel" onclick="chiudiStoricoInviati()">Chiudi</button></div>
         </div>
     </div>
 
@@ -473,6 +478,7 @@
                 let stato = '⏳ in attesa';
                 if (o.esito === 'APPLICATA') stato = '✔ applicata';
                 else if (o.esito === 'RIFIUTATA') stato = '✖ rifiutata dalla cassa';
+                else if (o.esito === 'SCARTATO') stato = '🗑️ eliminato (mai arrivato in cassa)';
                 else if (o.confermato) stato = isMod ? '✔ ricevuta, la cassa deve applicarla' : '✔ ricevuto';
                 if (isMod) {
                     return `<div style="border:1px dashed var(--primary); border-radius:10px; padding:8px; margin-bottom:8px;">
@@ -482,11 +488,12 @@
                     </div>`;
                 }
                 const tot = o.articoli.reduce((a, x) => a + x.prezzo * x.quantita, 0);
+                const attivo = o.esito !== 'SCARTATO' && o.articoli.length > 0;
                 return `<div style="border:1px solid var(--border); border-radius:10px; padding:8px; margin-bottom:8px;">
                     <div style="display:flex; justify-content:space-between; font-weight:800;"><span>${esc(o.tavolo)}</span><span style="font-size:0.8rem;">${stato}</span></div>
                     <small style="color:var(--text-muted);">${ora} · ${formattaEuro(tot)}</small>
                     <div style="font-size:0.8rem; margin-top:4px;">${o.articoli.length ? o.articoli.map(a => `${a.conto ? '[C' + a.conto + '] ' : ''}${a.quantita}x ${esc(a.nome)}${a.variazione ? ' (' + esc(a.variazione) + ')' : ''}`).join('<br>') : '<em>(ordine annullato)</em>'}</div>
-                    <div style="display:flex; gap:6px; margin-top:6px;"><button class="btn-modal confirm" style="padding:0.4rem 0.9rem;" onclick="modificaDaStorico(${i})">✏️ Modifica</button><button class="btn-modal cancel" style="padding:0.4rem 0.9rem;" onclick="riordinaDaStorico(${i})">↻ Riordina</button></div>
+                    <div style="display:flex; gap:6px; margin-top:6px; flex-wrap:wrap;">${attivo ? `<button class="btn-modal confirm" style="padding:0.4rem 0.8rem;" onclick="modificaDaStorico(${i})">✏️ Modifica</button><button class="btn-modal cancel" style="padding:0.4rem 0.8rem; color:var(--danger);" onclick="annullaOrdineInviato(${i})">🗑️ Annulla ordine</button>` : ''}<button class="btn-modal cancel" style="padding:0.4rem 0.8rem;" onclick="riordinaDaStorico(${i})">↻ Riordina</button></div>
                 </div>`;
             }).join('');
         }
@@ -544,17 +551,20 @@
                 delta.push({ id: rif.id, nome: rif.nome, variazione: rif.variazione || '', conto: rif.conto || 0, delta: d });
             });
             if (delta.length === 0) { showToast("Nessuna modifica rispetto all'ordine inviato.", "error"); return; }
+            const nuovoStato = comandaPalmare.map(a => ({ id: a.id, nome: a.nome, prezzo: a.prezzo, quantita: a.quantita, variazione: a.variazione || '', conto: a.conto || 0 }));
+            inviaModificaDelta(base, delta, nuovoStato);
+            uscitaDaModifica();
+            switchSchermataMobile('menu');
+        }
+        function inviaModificaDelta(base, delta, nuovoStato) {
             const oid = nuovoOid();
             const pacchetto = { tipo: 'MODIFICA', oid, oidOriginale: base.oid, tavolo: base.tavolo, operatore, dataEmissione: new Date().toISOString(), articoli: [], delta };
             ordiniNonConfermati[oid] = pacchetto;
             salvaLocale('smartcassa_non_confermati', ordiniNonConfermati);
-            const nuovoStato = comandaPalmare.map(a => ({ id: a.id, nome: a.nome, prezzo: a.prezzo, quantita: a.quantita, variazione: a.variazione || '', conto: a.conto || 0 }));
             const orig = storicoInviati.find(x => x.oid === base.oid);
             storicoInviati.unshift({ oid, tipo: 'MODIFICA', oidOriginale: base.oid, tavolo: base.tavolo, ora: pacchetto.dataEmissione, confermato: false, esito: '', delta, prima: JSON.parse(JSON.stringify(orig ? orig.articoli : base.articoli)) });
             if (orig) orig.articoli = nuovoStato;
             salvaStoricoInviati();
-            uscitaDaModifica();
-            switchSchermataMobile('menu');
             aggiornaBannerInvio();
             if (clientMqtt && clientMqtt.connected) { reinviaOrdiniNonConfermati(); showToast("Modifica inviata, attendo la cassa…"); }
             else showToast("Nessuna rete: modifica in coda, parte appena torna la connessione.", "error");
@@ -570,6 +580,101 @@
             if (navigator.vibrate) navigator.vibrate([80, 40, 80]);
             showToast(esito === 'APPLICATA' ? '✔ Modifica applicata dalla cassa' : '✖ Modifica rifiutata dalla cassa', esito === 'APPLICATA' ? 'success' : 'error');
             if (document.getElementById('modal-storico-palmare').classList.contains('active')) disegnaStoricoInviati();
+        }
+
+        // ---------- Annulla (undo) delle modifiche al carrello ----------
+        let undoStack = [], statoPrecedente = null, inUndo = false;
+        const serializzaCarrello = () => JSON.stringify(comandaPalmare);
+        function aggiornaPulsanteAnnulla() {
+            const b = document.getElementById('btn-annulla-azione'); if (!b) return;
+            b.disabled = undoStack.length === 0; b.style.opacity = undoStack.length ? '1' : '0.45';
+        }
+        function azzeraUndo() { undoStack = []; statoPrecedente = serializzaCarrello(); aggiornaPulsanteAnnulla(); }
+        const _salvaCarrelloOriginale = salvaCarrello;
+        salvaCarrello = function () {
+            if (!inUndo) {
+                const ora = serializzaCarrello();
+                if (statoPrecedente !== null && ora !== statoPrecedente) { undoStack.push(statoPrecedente); if (undoStack.length > 25) undoStack.shift(); }
+                statoPrecedente = ora;
+            }
+            _salvaCarrelloOriginale.apply(this, arguments);
+            aggiornaPulsanteAnnulla();
+        };
+        function annullaUltimaModifica() {
+            if (!undoStack.length) { showToast("Niente da annullare.", "error"); return; }
+            triggerVibration();
+            const prec = undoStack.pop();
+            inUndo = true;
+            try { comandaPalmare = JSON.parse(prec); statoPrecedente = prec; _salvaCarrelloOriginale(); } finally { inUndo = false; }
+            aggiornaInterfacciaComandaPalmare(); disegnaGrigliaProdotti(); aggiornaBadgeNavigazione(); aggiornaPulsanteAnnulla();
+            showToast("↩️ Ultima modifica annullata");
+        }
+        // dopo un invio o un cambio di modalità l'annulla riparte da zero (non si deve poter "rimettere" un ordine già inviato)
+        const _sped = spedisciOrdineACassa; spedisciOrdineACassa = function () { _sped.apply(this, arguments); azzeraUndo(); };
+        const _modDaSt = modificaDaStorico; modificaDaStorico = function () { _modDaSt.apply(this, arguments); azzeraUndo(); };
+        const _uscMod = uscitaDaModifica; uscitaDaModifica = function () { _uscMod.apply(this, arguments); azzeraUndo(); };
+
+        // ---------- Annullare un ordine già inviato, coda, elenco ----------
+        function annullaOrdineInviato(i) {
+            const o = storicoInviati[i]; if (!o || o.tipo === 'MODIFICA' || !o.articoli.length || o.esito === 'SCARTATO') return;
+            if (ordiniNonConfermati[o.oid]) {   // mai arrivato in cassa: basta toglierlo dalla coda
+                if (!confirm(`L'ordine di ${o.tavolo} non è ancora arrivato in cassa.\n\nLo elimino? Non verrà più inviato.`)) return;
+                delete ordiniNonConfermati[o.oid]; salvaLocale('smartcassa_non_confermati', ordiniNonConfermati);
+                o.esito = 'SCARTATO'; o.confermato = true;
+                salvaStoricoInviati(); aggiornaBannerInvio(); disegnaStoricoInviati();
+                showToast("Ordine eliminato: non verrà inviato");
+                return;
+            }
+            if (!operatore) { showToast("Inserisci prima il tuo nome operatore.", "error"); apriOperatore(); return; }
+            if (!confirm(`Annullo tutto l'ordine di ${o.tavolo}?\n\nLa cassa riceverà la richiesta di annullamento.`)) return;
+            const delta = o.articoli.map(a => ({ id: a.id, nome: a.nome, variazione: a.variazione || '', conto: a.conto || 0, delta: -a.quantita }));
+            inviaModificaDelta({ oid: o.oid, tavolo: o.tavolo, articoli: o.articoli }, delta, []);
+            disegnaStoricoInviati();
+        }
+        function scartaCodaNonConfermati() {
+            const ids = Object.keys(ordiniNonConfermati); if (!ids.length) return;
+            if (!confirm(`Elimino ${ids.length === 1 ? "l'ordine" : ids.length + ' ordini'} non ancora arrivat${ids.length === 1 ? 'o' : 'i'} in cassa?\n\nNon verranno più inviati.`)) return;
+            ids.forEach(oid => {
+                const st = storicoInviati.find(x => x.oid === oid);
+                if (st) {
+                    st.esito = 'SCARTATO'; st.confermato = true;
+                    if (st.tipo === 'MODIFICA') { const orig = storicoInviati.find(x => x.oid === st.oidOriginale); if (orig && st.prima) orig.articoli = st.prima; }
+                }
+                delete ordiniNonConfermati[oid];
+            });
+            salvaLocale('smartcassa_non_confermati', ordiniNonConfermati); salvaStoricoInviati(); aggiornaBannerInvio();
+            showToast("Coda svuotata");
+        }
+        function svuotaStoricoInviati() {
+            if (!storicoInviati.length) return;
+            if (!confirm("Svuoto l'elenco degli ordini inviati?\n\nNon potrai più modificarli o annullarli da questo palmare.")) return;
+            storicoInviati = storicoInviati.filter(x => ordiniNonConfermati[x.oid]);
+            salvaStoricoInviati(); disegnaStoricoInviati();
+        }
+        function aggiornaTavoliRecenti() {
+            const dl = document.getElementById('tavoli-recenti'); if (!dl) return;
+            const tv = [...new Set(storicoInviati.map(o => o.tavolo).filter(x => x && x !== 'BANCO'))].slice(0, 12);
+            dl.innerHTML = tv.map(x => `<option value="${esc(x)}">`).join('');
+        }
+        const _salvaStoricoOr = salvaStoricoInviati; salvaStoricoInviati = function () { _salvaStoricoOr.apply(this, arguments); aggiornaTavoliRecenti(); };
+
+        // ---------- Reset ----------
+        function riconnettiERicaricaMenu() { showToast("Riconnessione in corso…"); salvaEConnettiReteMqtt(); }
+        function azzeraLavoro() {
+            const nq = Object.keys(ordiniNonConfermati).length;
+            if (!confirm(`Azzero l'ordine in corso e l'elenco degli ordini inviati${nq ? ` e ${nq} ordine/i non ancora arrivati in cassa (andranno persi)` : ''}?\n\nRete e nome operatore restano.`)) return;
+            comandaPalmare = []; ordineInModifica = null; contoAttivo = 0; ordiniNonConfermati = {}; storicoInviati = [];
+            const it = document.getElementById('num-tavolo-palmare'); it.value = ''; it.readOnly = false;
+            salvaLocale('smartcassa_non_confermati', ordiniNonConfermati); salvaStoricoInviati(); salvaStatoModifica(); salvaCarrello(); azzeraUndo();
+            disegnaBarraConti(); aggiornaInterfacciaComandaPalmare(); disegnaGrigliaProdotti(); aggiornaBadgeNavigazione(); aggiornaBannerInvio();
+            showToast("Palmare azzerato");
+        }
+        function resetCompleto() {
+            if (!confirm("RESET COMPLETO: cancello ordine, coda, elenco inviati, nome operatore e codice rete di questo palmare.\n\nVuoi continuare?")) return;
+            try { Object.keys(localStorage).filter(k => k.indexOf('smartcassa_') === 0).forEach(k => localStorage.removeItem(k)); } catch (e) {}
+            try { if (navigator.serviceWorker) navigator.serviceWorker.getRegistrations().then(rs => rs.forEach(r => r.unregister())); } catch (e) {}
+            try { if (window.caches) caches.keys().then(ks => ks.forEach(k => caches.delete(k))); } catch (e) {}
+            setTimeout(() => location.reload(), 400);
         }
 
         let wakeLock = null;
@@ -769,6 +874,7 @@
             salvaEConnettiReteMqtt();
             if (!operatore) setTimeout(apriOperatore, 400);
             try { const m = JSON.parse(localStorage.getItem('smartcassa_ordine_in_modifica') || 'null'); if (m && m.oid) { ordineInModifica = m; const it = document.getElementById('num-tavolo-palmare'); if (it) it.readOnly = true; } } catch (e) {}
+            azzeraUndo(); aggiornaTavoliRecenti();
             aggiornaInterfacciaComandaPalmare();
             setInterval(() => { if (Object.keys(ordiniNonConfermati).length) reinviaOrdiniNonConfermati(); }, 8000);
             if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').catch(() => {});
